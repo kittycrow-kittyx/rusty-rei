@@ -27,4 +27,4 @@ bash scripts/regenerate.sh
 bash scripts/build.sh
 ```
 
-Bake lowers the pinned canonical Thistle source and Crust emits Rust. Review and commit the regenerated source, Cargo manifest and compiler manifest together. Do not edit generated kernel modules independently.
+Bake lowers the pinned canonical Thistle source and Crust emits Rust. GitHub Actions regenerates and uploads the source snapshot and checks that it matches the committed files. Compilation outputs remain local. Review and commit the regenerated source, Cargo manifest and compiler manifest together. Do not edit generated kernel modules independently.

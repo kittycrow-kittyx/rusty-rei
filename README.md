@@ -16,3 +16,5 @@ bash scripts/build.sh
 The build produces freestanding libraries for both architectures. A downstream platform supplies the intrinsic implementation and links its own image.
 
 See [build instructions](docs/build.md) to regenerate the source and [provenance](docs/provenance.md) for the pinned compiler and kernel revisions.
+
+Source generation runs in GitHub Actions against the pinned toolchain. Compiled libraries, objects and images are not committed.
