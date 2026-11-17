@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+git submodule update --init --recursive
 bash scripts/verify-pins.sh
 if [[ -n "$(git status --porcelain --untracked-files=no -- src Cargo.toml crust.manifest.json)" ]]; then
   echo "Refusing to overwrite modified generated source" >&2
