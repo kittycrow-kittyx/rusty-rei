@@ -2,9 +2,9 @@ name: Rusty Rei native build
 
 on:
   push:
-    branches: [rusty-rei]
+    branches: [main]
   pull_request:
-    branches: [rusty-rei]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
