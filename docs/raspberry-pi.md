@@ -5,10 +5,22 @@ The generated source in src/ remains identical to the platform-independent
 kernel. The platform crate implements Crust's Platform trait using a bounded,
 single-hart memory arena. It does not implement guest instructions or syscalls.
 
-Circle and the C++ hardware adapter are pinned separately. The adapter is
-taken from Rei's hardware branch, not from its C kernel. No Croissant source
-or C kernel objects are compiled or linked. The shared adapter handles the
-screen, serial, interrupts, timer, USB keyboard and onboard SD card.
+Circle and the C++ hardware adapter are pinned separately. The adapter and
+precompiled drivers are supplied by the vendor/rei-platform submodule,
+which points to Rei's hardware branch. No Croissant source or C kernel
+objects are compiled or linked. No Circle drivers are recompiled.
+
+The canonical bundle is vendor/rei-platform/prebuilt/raspi5. Its relocatable
+object contains 17 driver archives; four supporting archives are linked on
+demand. The build uses Rei's verification functions to check the source
+revision, toolchain, configuration, inventory, licence and SHA-256 checksums.
+It copies the same driver object into the build output. Circle source is
+needed for headers, startup link rules and verification. Only the platform
+adapter, root assembly and Rust kernel are compiled for this target.
+
+The adapter provides screen, serial, interrupts, timer, USB keyboard,
+read-only onboard SD and Ethernet/WLAN diagnostics. The presence of a driver
+in the compiled bundle does not establish guest-level device support.
 
 ## Build
 
@@ -22,9 +34,10 @@ produced by the mikuOS Rei build.
 The outputs are build/native/raspi5-circle/rusty-rei-raspi5-circle.img
 and build/native/raspi5-circle-sd/rusty-rei-raspi5-circle-sd.img.
 The latter loads root.vfs from the onboard SD FAT volume without an
-embedded fallback. The build checks the common Thistle, Bake and Circle
-pins against the adapter dependency. The Rust library is compiled directly
-from the checked-in source, without regenerating it.
+embedded fallback. The build requires identical Circle pins and records the C and Rust Thistle
+and Bake pins separately. It warns if the kernel pins differ. This allows
+hardware-only reuse without claiming kernel parity. The Rust library is
+compiled directly from the checked-in source, without regenerating it.
 
 ## Acceptance
 
