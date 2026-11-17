@@ -1,0 +1,17 @@
+[package]
+name = "rusty-rei-raspi5"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+crust-kernel = { path = "../.." }
+
+[features]
+sd-root = []
+
+[profile.release]
+panic = "abort"
+codegen-units = 1

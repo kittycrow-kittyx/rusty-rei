@@ -2,7 +2,7 @@
 
 **REI** stands for **Rei Executes Independently**.
 
-Rusty Rei is the platform-independent native Rust kernel generated from canonical Thistle through Bake and Crust. The generated source is committed in `src/`. It contains no C kernel or hardware-specific runtime.
+Rusty Rei is the platform-independent native Rust kernel generated from canonical Thistle through Bake and Crust. The generated source is committed in `src/`. The generated source contains no C kernel or hardware-specific runtime. This Raspberry Pi branch supplies a separate platform runtime.
 
 ## Build
 
@@ -18,3 +18,5 @@ The build produces freestanding libraries for both architectures. A downstream p
 See [build instructions](docs/build.md) to regenerate the source and [provenance](docs/provenance.md) for the pinned compiler and kernel revisions.
 
 Source generation runs in GitHub Actions against the pinned toolchain. Compiled libraries, objects and images are not committed.
+
+See [Raspberry Pi](docs/raspberry-pi.md) for the Circle-backed ARM64 boot targets.

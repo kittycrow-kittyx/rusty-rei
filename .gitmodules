@@ -7,3 +7,9 @@
 [submodule "crust"]
 	path = crust
 	url = https://github.com/kittycrow-kittyx/crust.git
+[submodule "vendor/circle"]
+	path = vendor/circle
+	url = https://github.com/rsta2/circle.git
+[submodule "vendor/rei-platform"]
+	path = vendor/rei-platform
+	url = https://github.com/kittycrow-kittyx/rei.git
