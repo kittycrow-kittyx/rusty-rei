@@ -1,0 +1,9 @@
+[submodule "thistle"]
+	path = thistle
+	url = https://github.com/kitty-crow/thistle.git
+[submodule "bake"]
+	path = bake
+	url = https://github.com/kitty-crow/bake.git
+[submodule "croissant"]
+	path = croissant
+	url = https://github.com/kitty-crow/croissant.git
