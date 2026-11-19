@@ -46,6 +46,20 @@ bash scripts/verify-pins.sh
 To regenerate the source, manifest, and native object snapshots from the
 pinned dependencies, see [Building Rei](docs/build.md).
 
+## ARM64 Raspberry Pi emulation
+
+Rei has a bounded QEMU `raspi3b` smoke test which boots an AArch64
+`kernel8.img`, initialises the Raspberry Pi PL011 UART and executes
+a Croissant-generated function from the canonical Thistle source.
+
+```sh
+bash scripts/qemu-raspi3b-smoke.sh
+```
+
+The test stops QEMU automatically and verifies serial output. See
+[QEMU Raspberry Pi 3B smoke test](docs/qemu-raspi3b.md) for prerequisites,
+the exact hardware model and what this milestone does **not** prove.
+
 ## Status
 
 Rei currently compiles the canonical Thistle kernel to separate C
