@@ -11,6 +11,9 @@ permissions:
   contents: read
 
 jobs:
+  targets:
+    name: Discover validation targets
+    uses: ./.github/workflows/targets.yml
   source:
     name: Transpile source
     runs-on: ubuntu-latest
@@ -34,8 +37,13 @@ jobs:
             crust.manifest.json
           if-no-files-found: error
   compile:
-    name: Compile
-    needs: source
+    name: Compile (${{ matrix.arch }})
+    needs: [source, targets]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    env:
+      TARGET: ${{ matrix.target }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -58,10 +66,32 @@ jobs:
           bash -n scripts/build.sh scripts/regenerate.sh scripts/verify-pins.sh
           grep -Fxq '#![no_std]' src/lib.rs
           grep -Fxq '#![forbid(unsafe_code)]' src/lib.rs
-      - name: Install bare-metal targets for regenerated Rust
-        run: rustup target add x86_64-unknown-none aarch64-unknown-none
+      - name: Install Target Toolchain
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+          BUILD_STD: ${{ toJSON(matrix.buildStd) }}
+        run: |
+          set -euo pipefail
+          rustup toolchain install "$TOOLCHAIN" --profile minimal
+          if [[ "$BUILD_STD" == true ]]; then
+            rustup component add rust-src --toolchain "$TOOLCHAIN"
+            rustc +"$TOOLCHAIN" --print target-list | grep -Fx "$TARGET"
+          else
+            rustup target add "$TARGET" --toolchain "$TOOLCHAIN"
+          fi
       - name: Compile freshly generated source
-        run: bash scripts/build.sh
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+          BUILD_STD: ${{ toJSON(matrix.buildStd) }}
+          RUSTFLAGS: -D warnings -C panic=abort
+        run: |
+          set -euo pipefail
+          if [[ "$BUILD_STD" == true ]]; then
+            cargo +"$TOOLCHAIN" build -Z build-std=core,compiler_builtins --release -j 2 --target "$TARGET" --lib
+          else
+            cargo +"$TOOLCHAIN" build --release -j 2 --target "$TARGET" --lib
+          fi
+          test -s "target/$TARGET/release/libcrust_kernel.rlib"
       - name: Verify committed source matches regeneration
         run: |
           git add -A -- src Cargo.toml crust.manifest.json

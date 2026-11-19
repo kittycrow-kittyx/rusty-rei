@@ -1,0 +1,71 @@
+name: Discover upstream CI targets
+
+on:
+  workflow_call:
+    outputs:
+      matrix:
+        description: Target matrix consumed by the upstream final validation job
+        value: ${{ jobs.discover.outputs.matrix }}
+      revision:
+        description: Exact upstream target-policy commit
+        value: ${{ jobs.discover.outputs.revision }}
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+      revision: ${{ steps.targets.outputs.revision }}
+    steps:
+      - name: Read the current upstream CI contract
+        uses: actions/checkout@v5
+        with:
+          repository: kittycrow-kittyx/crust
+          ref: main
+          path: upstream-ci
+          persist-credentials: false
+      - name: Discover and validate the final-stage matrix
+        id: targets
+        working-directory: upstream-ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -ryaml -rjson <<'RUBY'
+          workflow = YAML.safe_load_file('.github/workflows/compiler.yml', aliases: false)
+          jobs = workflow.fetch('jobs')
+          dependencies = jobs.values.flat_map { |job| Array(job['needs']) }
+          final_jobs = jobs.keys - dependencies
+          abort 'Expected one final upstream validation job' unless final_jobs.size == 1
+          steps = jobs.fetch(final_jobs.first).fetch('steps')
+          consumes_matrix = steps.any? do |step|
+            run = step.fetch('run', '')
+            run.include?('targets.json') && run.include?('.include[]') &&
+              run.include?('.target') && run.include?('cargo +')
+          end
+          abort 'Final validation no longer consumes targets.json; review the CI contract' unless consumes_matrix
+          matrix = JSON.parse(File.read('targets.json'))
+          rows = matrix.fetch('include')
+          abort 'Unsupported target schema' unless matrix['schema'] == 1 && rows.is_a?(Array) && !rows.empty? && rows.size <= 256
+          valid = rows.all? do |row|
+            row.is_a?(Hash) &&
+              row['arch'].is_a?(String) && row['arch'].match?(/\A[a-z0-9][a-z0-9_-]*\z/) &&
+              row['target'].is_a?(String) && row['target'].match?(/\A[a-zA-Z0-9][a-zA-Z0-9._-]*\z/) &&
+              %w[ELF32 ELF64].include?(row['elf']) &&
+              row['machine'].is_a?(String) && !row['machine'].strip.empty? &&
+              !row['machine'].match?(/[\r\n]/) &&
+              row['toolchain'].is_a?(String) && row['toolchain'].match?(/\A[a-zA-Z0-9][a-zA-Z0-9._-]*\z/) && [true, false].include?(row['buildStd'])
+          end
+          abort 'Invalid or unsupported target profile' unless valid
+          abort 'Duplicate architecture or target' unless rows.map { |row| row['arch'] }.uniq.size == rows.size && rows.map { |row| row['target'] }.uniq.size == rows.size
+          File.open(ENV.fetch('GITHUB_OUTPUT'), 'a') do |out|
+            out.puts("matrix=#{JSON.generate({'include' => rows})}")
+          end
+          puts "Upstream final job: #{final_jobs.first}"
+          rows.each { |row| puts "#{row.fetch('arch')}: #{row.fetch('target')}" }
+          RUBY
+          revision="$(git rev-parse HEAD)"
+          printf 'revision=%s\n' "$revision" >> "$GITHUB_OUTPUT"
+          printf 'Target policy revision: %s\n' "$revision"

@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  targets:
+    name: Discover release targets
+    uses: ./.github/workflows/targets.yml
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: targets
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    env:
+      TARGET: ${{ matrix.target }}
+      ARCH: ${{ matrix.arch }}
+      ELF_CLASS: ${{ matrix.elf }}
+      MACHINE: ${{ matrix.machine }}
+      BUILD_STD: ${{ toJSON(matrix.buildStd) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Validate Version
+        run: |
+          version="$(cat VERSION)"
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          tag="v$version"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            test "$GITHUB_REF_NAME" = "$tag"
+          fi
+          printf 'TAG=%s\n' "$tag" >> "$GITHUB_ENV"
+      - name: Setup Rust
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: rustup toolchain install "$TOOLCHAIN" --profile minimal
+      - name: Install Target
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: |
+          if [[ "$BUILD_STD" == true ]]; then
+            rustup component add rust-src --toolchain "$TOOLCHAIN"
+            rustc +"$TOOLCHAIN" --print target-list | grep -Fx "$TARGET"
+          else
+            rustup target add "$TARGET" --toolchain "$TOOLCHAIN"
+          fi
+      - name: Verify Source
+        run: |
+          grep -Fxq '#![no_std]' src/lib.rs
+          grep -Fxq '#![forbid(unsafe_code)]' src/lib.rs
+          test -s Cargo.toml
+          test -s crust.manifest.json
+      - name: Compile
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: |
+          export RUSTFLAGS="-D warnings -C panic=abort"
+          if [[ "$BUILD_STD" == true ]]; then
+            cargo +"$TOOLCHAIN" build -Z build-std=core,compiler_builtins --release --target "$TARGET" --lib
+          else
+            cargo +"$TOOLCHAIN" build --release --target "$TARGET" --lib
+          fi
+      - name: Stage Distribution
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: |
+          mkdir -p package/lib build/verify
+          cp "target/$TARGET/release/libcrust_kernel.rlib" package/lib/
+          cp -R src Cargo.toml crust.manifest.json LICENSE VERSION package/
+          rustc +"$TOOLCHAIN" -vV > package/COMPILER.txt
+          cargo +"$TOOLCHAIN" --version >> package/COMPILER.txt
+          printf '\nTarget: %s\nRUSTFLAGS: -D warnings -C panic=abort\n' "$TARGET" >> package/COMPILER.txt
+          test -s package/lib/libcrust_kernel.rlib
+          (cd build/verify && ar x ../../package/lib/libcrust_kernel.rlib)
+      - name: Record Upstream Target Policy
+        env:
+          TARGET_POLICY: ${{ needs.targets.outputs.matrix }}
+          TARGET_REVISION: ${{ needs.targets.outputs.revision }}
+          TARGET_PROFILE: ${{ toJSON(matrix) }}
+        run: |
+          jq . <<< "$TARGET_POLICY" > package/TARGETS.json
+          jq . <<< "$TARGET_PROFILE" > package/TARGET.json
+          printf 'kittycrow-kittyx/crust@%s\n' "$TARGET_REVISION" > package/TARGETS_REVISION
+      - name: Verify Architecture
+        run: |
+          shopt -s nullglob
+          objects=(build/verify/*.o)
+          test "${#objects[@]}" -gt 0
+          for object in "${objects[@]}"; do
+            header="$(LC_ALL=C readelf -h "$object")"
+            machine="$(printf '%s\n' "$header" | sed -n 's/^[[:space:]]*Machine:[[:space:]]*//p')"
+            class="$(printf '%s\n' "$header" | sed -n 's/^[[:space:]]*Class:[[:space:]]*//p')"
+            test "$machine" = "$MACHINE"
+            test "$class" = "$ELF_CLASS"
+          done
+      - name: Package
+        run: |
+          mkdir -p dist
+          tar --sort=name --mtime="@$(git show -s --format=%ct HEAD)" \
+            --owner=0 --group=0 --numeric-owner \
+            -czf "dist/rusty-rei-$TAG-$ARCH.tar.gz" -C package .
+          tar -tzf "dist/rusty-rei-$TAG-$ARCH.tar.gz"
+      - name: Upload Release Artefact
+        uses: actions/upload-artifact@v6
+        with:
+          name: rusty-rei-${{ matrix.arch }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish Release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: [targets, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download Release Artefacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: rusty-rei-*
+          path: release
+          merge-multiple: true
+      - name: Generate Checksums
+        env:
+          TARGET_POLICY: ${{ needs.targets.outputs.matrix }}
+        run: |
+          set -euo pipefail
+          cd release
+          mapfile -t architectures < <(jq -er '.include[].arch' <<< "$TARGET_POLICY")
+          test "${#architectures[@]}" -gt 0
+          expected=()
+          for arch in "${architectures[@]}"; do
+            archive="rusty-rei-$GITHUB_REF_NAME-$arch.tar.gz"
+            test -s "$archive"
+            expected+=("$archive")
+          done
+          shopt -s nullglob
+          archives=(*.tar.gz)
+          test "${#archives[@]}" -eq "${#expected[@]}"
+          sha256sum "${expected[@]}" > SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/*.tar.gz release/SHA256SUMS \
+            --verify-tag --generate-notes --title "Rusty Rei $GITHUB_REF_NAME"
