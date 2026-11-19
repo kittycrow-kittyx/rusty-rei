@@ -17,7 +17,7 @@ return ((crate::m_native__thx::digit(ctx, byte) || ((byte >= 65.0f64) && (byte <
 
 pub fn space<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut at: f64, mut end: f64) -> f64 {
 let mut cursor: f64 = at;
-'__crust_v62: while ((cursor < end) && crate::m_native__thx::whitespace(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor))) {
+'__crust_v63: while ((cursor < end) && crate::m_native__thx::whitespace(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor))) {
 let _ = { cursor = (cursor + 1.0f64); cursor };
 }
 return cursor;
@@ -49,7 +49,7 @@ return ctx.globals.m_native__thx__BAD.expect("global initialisation");
 let start: f64 = (at + 1.0f64);
 let mut cursor: f64 = start;
 let mut escaped: f64 = 0.0f64;
-'__crust_v63: while (cursor < end) {
+'__crust_v64: while (cursor < end) {
 {
 let byte: f64 = crate::m_native__memory::loadU8(ctx, memory, cursor);
 if (byte == 34.0f64) {
@@ -67,7 +67,7 @@ if (byte == 92.0f64) {
 {
 let _ = { escaped = 1.0f64; escaped };
 let _ = { cursor = crate::m_native__thx::skipEscape(ctx, memory, (cursor + 1.0f64), end); cursor };
-continue '__crust_v63;
+continue '__crust_v64;
 }
 }
 let _ = { cursor = (cursor + 1.0f64); cursor };
@@ -201,7 +201,7 @@ return ctx.globals.m_native__thx__BAD.expect("global initialisation");
 let first: f64 = crate::m_native__memory::loadU8(ctx, memory, at);
 let mut cursor: f64 = at;
 let mut value: i128 = 0i128;
-'__crust_v64: while ((cursor < end) && crate::m_native__thx::digit(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor))) {
+'__crust_v65: while ((cursor < end) && crate::m_native__thx::digit(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor))) {
 {
 if ((first == 48.0f64) && (cursor != at)) {
 return ctx.globals.m_native__thx__BAD.expect("global initialisation");
@@ -231,7 +231,7 @@ let mut cursor: f64 = at;
 if ((cursor >= end) || (!crate::m_native__thx::digit(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor)))) {
 return ctx.globals.m_native__thx__BAD.expect("global initialisation");
 }
-'__crust_v65: while ((cursor < end) && crate::m_native__thx::digit(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor))) {
+'__crust_v66: while ((cursor < end) && crate::m_native__thx::digit(ctx, crate::m_native__memory::loadU8(ctx, memory, cursor))) {
 let _ = { cursor = (cursor + 1.0f64); cursor };
 }
 return cursor;
@@ -276,7 +276,7 @@ let mut cursor: f64 = crate::m_native__thx::space(ctx, memory, (at + 1.0f64), en
 if ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) == 93.0f64)) {
 return (cursor + 1.0f64);
 }
-'__crust_v66: while (cursor < end) {
+'__crust_v67: while (cursor < end) {
 {
 let _ = { cursor = crate::m_native__thx::skipValue(ctx, memory, cursor, end, (depth + 1.0f64)); cursor };
 if (cursor == ctx.globals.m_native__thx__BAD.expect("global initialisation")) {
@@ -301,7 +301,7 @@ let mut cursor: f64 = crate::m_native__thx::space(ctx, memory, (at + 1.0f64), en
 if ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) == 125.0f64)) {
 return (cursor + 1.0f64);
 }
-'__crust_v67: while (cursor < end) {
+'__crust_v68: while (cursor < end) {
 {
 let _ = { cursor = crate::m_native__thx::parseString(ctx, memory, cursor, end); cursor };
 if (cursor == ctx.globals.m_native__thx__BAD.expect("global initialisation")) {
@@ -376,7 +376,7 @@ let at: f64 = crate::m_native__memory::loadU32(ctx, memory, (ctx.globals.m_nativ
 let length: f64 = crate::m_native__memory::loadU32(ctx, memory, (ctx.globals.m_native__abi__THISTLE_PARSER_BASE.expect("global initialisation") + ctx.globals.m_native__abi__THISTLE_PARSER_STRING_LENGTH.expect("global initialisation")));
 let mut hash: f64 = 2166136261.0f64;
 let mut index: f64 = 0.0f64;
-'__crust_v68: while (index < length) {
+'__crust_v69: while (index < length) {
 {
 let _ = { hash = crate::m_native__word::mulU32(ctx, numbers::xor(hash, crate::m_native__memory::loadU8(ctx, memory, (at + index))), 16777619.0f64); hash };
 let _ = { index = (index + 1.0f64); index };
@@ -394,7 +394,7 @@ let at: f64 = crate::m_native__memory::loadU32(ctx, memory, (ctx.globals.m_nativ
 let length: f64 = crate::m_native__memory::loadU32(ctx, memory, (ctx.globals.m_native__abi__THISTLE_PARSER_BASE.expect("global initialisation") + ctx.globals.m_native__abi__THISTLE_PARSER_STRING_LENGTH.expect("global initialisation")));
 let mut flags: f64 = 0.0f64;
 let mut index: f64 = 0.0f64;
-'__crust_v69: while (index < length) {
+'__crust_v70: while (index < length) {
 {
 let value: f64 = crate::m_native__memory::loadU8(ctx, memory, (at + index));
 let flag: f64 = (if (value == 114.0f64) { ctx.globals.m_native__abi__THISTLE_SEGMENT_READ.expect("global initialisation") } else { (if (value == 119.0f64) { ctx.globals.m_native__abi__THISTLE_SEGMENT_WRITE.expect("global initialisation") } else { (if (value == 120.0f64) { ctx.globals.m_native__abi__THISTLE_SEGMENT_EXECUTE.expect("global initialisation") } else { 0.0f64 }) }) });
@@ -421,7 +421,7 @@ let _ = { cursor = crate::m_native__thx::space(ctx, memory, (cursor + 1.0f64), e
 if ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) == 93.0f64)) {
 return ctx.globals.m_native__abi__THISTLE_THX_SECTION.expect("global initialisation");
 }
-'__crust_v70: while (cursor < end) {
+'__crust_v71: while (cursor < end) {
 {
 if (crate::m_native__memory::loadU8(ctx, memory, cursor) != 123.0f64) {
 return ctx.globals.m_native__abi__THISTLE_THX_SECTION.expect("global initialisation");
@@ -436,7 +436,7 @@ let mut size: i128 = 0i128;
 let mut address: i128 = 0i128;
 let mut offset: i128 = 0i128;
 let mut length: i128 = 0i128;
-'__crust_v71: while ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) != 125.0f64)) {
+'__crust_v72: while ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) != 125.0f64)) {
 {
 let _ = { cursor = crate::m_native__thx::parseString(ctx, memory, cursor, end); cursor };
 if (cursor == ctx.globals.m_native__thx__BAD.expect("global initialisation")) {
@@ -491,7 +491,7 @@ let _ = { length = value; length };
 let _ = { seen = numbers::or(seen, bit); seen };
 let _ = { cursor = crate::m_native__thx::space(ctx, memory, cursor, end); cursor };
 if ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) == 125.0f64)) {
-break '__crust_v71;
+break '__crust_v72;
 }
 if ((cursor >= end) || (crate::m_native__memory::loadU8(ctx, memory, cursor) != 44.0f64)) {
 return ctx.globals.m_native__abi__THISTLE_THX_SECTION.expect("global initialisation");
@@ -537,7 +537,7 @@ return ctx.globals.m_native__abi__THISTLE_THX_LENGTH.expect("global initialisati
 }
 let mut checksum: f64 = 2166136261.0f64;
 let mut index: f64 = 16.0f64;
-'__crust_v72: while (index < imageLength) {
+'__crust_v73: while (index < imageLength) {
 {
 let _ = { checksum = crate::m_native__word::mulU32(ctx, numbers::xor(checksum, crate::m_native__memory::loadU8(ctx, memory, (image + index))), 16777619.0f64); checksum };
 let _ = { index = (index + 1.0f64); index };
@@ -582,7 +582,7 @@ return ctx.globals.m_native__abi__THISTLE_THX_JSON.expect("global initialisation
 }
 let _ = { cursor = crate::m_native__thx::space(ctx, memory, (cursor + 1.0f64), end); cursor };
 let mut seen: f64 = 0.0f64;
-'__crust_v73: while ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) != 125.0f64)) {
+'__crust_v74: while ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) != 125.0f64)) {
 {
 let _ = { cursor = crate::m_native__thx::parseString(ctx, memory, cursor, end); cursor };
 if (cursor == ctx.globals.m_native__thx__BAD.expect("global initialisation")) {
@@ -608,7 +608,7 @@ return ctx.globals.m_native__abi__THISTLE_THX_METADATA.expect("global initialisa
 let _ = { seen = numbers::or(seen, bit); seen };
 let _ = { cursor = crate::m_native__thx::space(ctx, memory, cursor, end); cursor };
 if ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) == 125.0f64)) {
-break '__crust_v73;
+break '__crust_v74;
 }
 if ((cursor >= end) || (crate::m_native__memory::loadU8(ctx, memory, cursor) != 44.0f64)) {
 return ctx.globals.m_native__abi__THISTLE_THX_JSON.expect("global initialisation");
@@ -625,7 +625,7 @@ return ctx.globals.m_native__abi__THISTLE_THX_OK.expect("global initialisation")
 
 pub fn headerValue<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut header: f64, mut end: f64, mut wanted: f64) -> i128 {
 let mut cursor: f64 = crate::m_native__thx::space(ctx, memory, (crate::m_native__thx::space(ctx, memory, header, end) + 1.0f64), end);
-'__crust_v74: while ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) != 125.0f64)) {
+'__crust_v75: while ((cursor < end) && (crate::m_native__memory::loadU8(ctx, memory, cursor) != 125.0f64)) {
 {
 let _ = { cursor = crate::m_native__thx::parseString(ctx, memory, cursor, end); cursor };
 let key: f64 = crate::m_native__thx::keyId(ctx, memory);
@@ -639,7 +639,7 @@ return crate::m_native__memory::loadU64(ctx, memory, (ctx.globals.m_native__abi_
 }
 let _ = { cursor = crate::m_native__thx::space(ctx, memory, cursor, end); cursor };
 if ((cursor >= end) || (crate::m_native__memory::loadU8(ctx, memory, cursor) == 125.0f64)) {
-break '__crust_v74;
+break '__crust_v75;
 }
 let _ = { cursor = crate::m_native__thx::space(ctx, memory, (cursor + 1.0f64), end); cursor };
 }

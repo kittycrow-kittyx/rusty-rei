@@ -9,7 +9,7 @@ if (length > ((end - at) - 4.0f64)) {
 return ctx.globals.m_native__start__START_BAD.expect("global initialisation");
 }
 let mut index: f64 = 0.0f64;
-'__crust_v58: while (index < length) {
+'__crust_v59: while (index < length) {
 {
 if (crate::m_native__memory::loadU8(ctx, memory, ((at + 4.0f64) + index)) == 0.0f64) {
 return ctx.globals.m_native__start__START_BAD.expect("global initialisation");
@@ -39,7 +39,7 @@ let end: f64 = (startup + startupLength);
 let mut cursor: f64 = (startup + 32.0f64);
 let mut totalStrings: i128 = 0i128;
 let mut index: f64 = 0.0f64;
-'__crust_v59: while (index < entries) {
+'__crust_v60: while (index < entries) {
 {
 let next: f64 = crate::m_native__start::startupEntry(ctx, memory, cursor, end);
 if (next == ctx.globals.m_native__start__START_BAD.expect("global initialisation")) {
@@ -104,7 +104,7 @@ return result;
 let _ = { cursor = (startup + 32.0f64); cursor };
 let _ = { stringPointer = (top).checked_sub(16i128).expect("BigInt arithmetic"); stringPointer };
 let _ = { index = 0.0f64; index };
-'__crust_v60: while (index < envc) {
+'__crust_v61: while (index < envc) {
 {
 let next: f64 = crate::m_native__start::startupEntry(ctx, memory, cursor, end);
 if (next == ctx.globals.m_native__start__START_BAD.expect("global initialisation")) {
@@ -126,7 +126,7 @@ let _ = { index = (index + 1.0f64); index };
 }
 let mut exec: i128 = 0i128;
 let _ = { index = 0.0f64; index };
-'__crust_v61: while (index < argc) {
+'__crust_v62: while (index < argc) {
 {
 let next: f64 = crate::m_native__start::startupEntry(ctx, memory, cursor, end);
 if (next == ctx.globals.m_native__start__START_BAD.expect("global initialisation")) {

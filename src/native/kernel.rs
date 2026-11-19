@@ -1178,6 +1178,58 @@ return crate::m_native__word::sx(ctx, candidate, 64.0f64);
 }
 
 
+pub fn thistleMapHostFile<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut hart: f64, mut address: i128, mut length: i128, mut protection: i128, mut flags: i128) -> i128 {
+let proc: f64 = crate::m_native__kernel::processForHart(ctx, memory, hart);
+if (proc == ctx.globals.m_native__kernel__INVALID_POINTER.expect("global initialisation")) {
+return (3i128).checked_neg().expect("BigInt negation");
+}
+let lock: f64 = (proc + ctx.globals.m_native__abi__P_LOCK.expect("global initialisation"));
+if (!crate::m_native__kernel::acquire(ctx, memory, lock)) {
+return (11i128).checked_neg().expect("BigInt negation");
+}
+let result: i128 = crate::m_native__kernel::anonymousMap(ctx, memory, proc, address, length, protection, (flags | 32i128));
+if (result >= 0i128) {
+{
+let count: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
+let _ = crate::m_native__memory::storeU32(ctx, memory, (crate::m_native__kernel::mapAt(ctx, memory, proc, (count - 1.0f64)) + ctx.globals.m_native__abi__M_BACKING.expect("global initialisation")), Numeric::Number(ctx.globals.m_native__abi__THISTLE_MAP_BACKING_HOST_FILE.expect("global initialisation")));
+}
+}
+let _ = crate::m_native__kernel::release(ctx, memory, lock);
+return result;
+}
+
+
+pub fn thistleUnmapHostFile<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut hart: f64, mut address: i128, mut length: i128) -> i128 {
+let proc: f64 = crate::m_native__kernel::processForHart(ctx, memory, hart);
+if (proc == ctx.globals.m_native__kernel__INVALID_POINTER.expect("global initialisation")) {
+return (3i128).checked_neg().expect("BigInt negation");
+}
+let lock: f64 = (proc + ctx.globals.m_native__abi__P_LOCK.expect("global initialisation"));
+if (!crate::m_native__kernel::acquire(ctx, memory, lock)) {
+return (11i128).checked_neg().expect("BigInt negation");
+}
+let result: i128 = crate::m_native__kernel::anonymousUnmap(ctx, memory, proc, address, length);
+let _ = crate::m_native__kernel::release(ctx, memory, lock);
+return result;
+}
+
+
+pub fn overlapsHostFile<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut proc: f64, mut address: i128, mut length: i128) -> bool {
+let count: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
+let mut index: f64 = 0.0f64;
+'__crust_v26: while (index < count) {
+{
+let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
+if (((crate::m_native__memory::loadU32(ctx, memory, (mapping + ctx.globals.m_native__abi__M_BACKING.expect("global initialisation"))) == ctx.globals.m_native__abi__THISTLE_MAP_BACKING_HOST_FILE.expect("global initialisation")) && (address < crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_END.expect("global initialisation"))))) && ((address).checked_add(length).expect("BigInt arithmetic") > crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation"))))) {
+return true;
+}
+let _ = { index = (index + 1.0f64); index };
+}
+}
+return false;
+}
+
+
 pub fn anonymousUnmap<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut proc: f64, mut address: i128, mut length: i128) -> i128 {
 let top: i128 = crate::m_native__memory::atomicLoadU64(ctx, memory, (proc + ctx.globals.m_native__abi__P_VIRTUAL_TOP.expect("global initialisation")));
 if ((((length == 0i128) || (((address & ((ctx.globals.m_native__kernel__MAP_PAGE.expect("global initialisation")).checked_sub(1i128).expect("BigInt arithmetic")))) != 0i128)) || (address >= top)) || (length > (top).checked_sub(address).expect("BigInt arithmetic"))) {
@@ -1193,7 +1245,7 @@ let capacity: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.gl
 let mut index: f64 = 0.0f64;
 let mut splits: f64 = 0.0f64;
 let mut hit: bool = false;
-'__crust_v26: while (index < count) {
+'__crust_v27: while (index < count) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 let start: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")));
@@ -1215,7 +1267,7 @@ if (splits > (capacity - count)) {
 return (12i128).checked_neg().expect("BigInt negation");
 }
 let _ = { index = 0.0f64; index };
-'__crust_v27: while (index < count) {
+'__crust_v28: while (index < count) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 let start: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")));
@@ -1223,7 +1275,7 @@ let stop: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.gl
 if ((address >= stop) || (end <= start)) {
 {
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v27;
+continue '__crust_v28;
 }
 }
 let low: i128 = (if (address > start) { address } else { start });
@@ -1232,7 +1284,7 @@ let _ = crate::m_native__kernel::clearMappedRange(ctx, memory, proc, low, high);
 if ((address <= start) && (end >= stop)) {
 {
 let mut ts_move: f64 = index;
-'__crust_v28: while ((ts_move + 1.0f64) < count) {
+'__crust_v29: while ((ts_move + 1.0f64) < count) {
 {
 let _ = crate::m_native__kernel::copyMap(ctx, memory, crate::m_native__kernel::mapAt(ctx, memory, proc, ts_move), crate::m_native__kernel::mapAt(ctx, memory, proc, (ts_move + 1.0f64)));
 let _ = { ts_move = (ts_move + 1.0f64); ts_move };
@@ -1240,7 +1292,7 @@ let _ = { ts_move = (ts_move + 1.0f64); ts_move };
 }
 let _ = { count = (count - 1.0f64); count };
 let _ = crate::m_native__memory::fill(ctx, memory, crate::m_native__kernel::mapAt(ctx, memory, proc, count), ctx.globals.m_native__abi__THISTLE_MAP_STRIDE.expect("global initialisation"), 0.0f64);
-continue '__crust_v27;
+continue '__crust_v28;
 }
 }
 if (address <= start) {
@@ -1248,14 +1300,14 @@ if (address <= start) {
 let _ = crate::m_native__memory::storeU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")), end);
 let _ = crate::m_native__memory::storeU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_FILE_OFFSET.expect("global initialisation")), ((crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_FILE_OFFSET.expect("global initialisation")))).checked_add(end).expect("BigInt arithmetic")).checked_sub(start).expect("BigInt arithmetic"));
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v27;
+continue '__crust_v28;
 }
 }
 if (end >= stop) {
 {
 let _ = crate::m_native__memory::storeU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_END.expect("global initialisation")), address);
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v27;
+continue '__crust_v28;
 }
 }
 let right: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, count);
@@ -1275,11 +1327,11 @@ return 0i128;
 pub fn mappingsCover<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut proc: f64, mut address: i128, mut end: i128) -> bool {
 let count: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
 let mut cursor: i128 = address;
-'__crust_v29: while (cursor < end) {
+'__crust_v30: while (cursor < end) {
 {
 let mut found: bool = false;
 let mut index: f64 = 0.0f64;
-'__crust_v30: while (index < count) {
+'__crust_v31: while (index < count) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 let start: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")));
@@ -1288,7 +1340,7 @@ if ((cursor >= start) && (cursor < stop)) {
 {
 let _ = { cursor = (if (stop < end) { stop } else { end }); cursor };
 let _ = { found = true; found };
-break '__crust_v30;
+break '__crust_v31;
 }
 }
 let _ = { index = (index + 1.0f64); index };
@@ -1317,7 +1369,7 @@ let original: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.gl
 let mut hit: bool = false;
 let mut needed: f64 = 0.0f64;
 let mut index: f64 = 0.0f64;
-'__crust_v31: while (index < original) {
+'__crust_v32: while (index < original) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 let start: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")));
@@ -1347,7 +1399,7 @@ return (12i128).checked_neg().expect("BigInt negation");
 }
 let mut count: f64 = original;
 let _ = { index = 0.0f64; index };
-'__crust_v32: while (index < original) {
+'__crust_v33: while (index < original) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 let start: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")));
@@ -1355,7 +1407,7 @@ let stop: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.gl
 if ((address >= stop) || (end <= start)) {
 {
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v32;
+continue '__crust_v33;
 }
 }
 let low: i128 = (if (address > start) { address } else { start });
@@ -1365,7 +1417,7 @@ if ((low == start) && (high == stop)) {
 {
 let _ = crate::m_native__memory::storeU32(ctx, memory, (mapping + ctx.globals.m_native__abi__M_PROTECTION.expect("global initialisation")), Numeric::Number(crate::m_native__word::wordToU32(ctx, protection)));
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v32;
+continue '__crust_v33;
 }
 }
 if (low == start) {
@@ -1378,7 +1430,7 @@ let _ = crate::m_native__memory::storeU64(ctx, memory, (mapping + ctx.globals.m_
 let _ = crate::m_native__memory::storeU32(ctx, memory, (mapping + ctx.globals.m_native__abi__M_PROTECTION.expect("global initialisation")), Numeric::Number(crate::m_native__word::wordToU32(ctx, protection)));
 let _ = { count = (count + 1.0f64); count };
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v32;
+continue '__crust_v33;
 }
 }
 if (high == stop) {
@@ -1391,7 +1443,7 @@ let _ = crate::m_native__memory::storeU32(ctx, memory, (changed + ctx.globals.m_
 let _ = crate::m_native__memory::storeU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_END.expect("global initialisation")), low);
 let _ = { count = (count + 1.0f64); count };
 let _ = { index = (index + 1.0f64); index };
-continue '__crust_v32;
+continue '__crust_v33;
 }
 }
 {
@@ -1425,7 +1477,7 @@ return true;
 }
 let count: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
 let mut index: f64 = 0.0f64;
-'__crust_v33: while (index < count) {
+'__crust_v34: while (index < count) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 if (((index != except) && (address < crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_END.expect("global initialisation"))))) && (end > crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation"))))) {
@@ -1440,7 +1492,7 @@ return false;
 
 pub fn copyPageSpan<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut hart: f64, mut destination: i128, mut source: f64, mut amount: f64) -> bool {
 let mut copied: f64 = 0.0f64;
-'__crust_v34: while (copied < amount) {
+'__crust_v35: while (copied < amount) {
 {
 let target: i128 = (destination).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, copied))).expect("BigInt arithmetic");
 let targetFrame: f64 = crate::m_native__kernel::guestPage(ctx, memory, hart, target, true);
@@ -1463,14 +1515,14 @@ let table: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globa
 let capacity: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_PAGE_CAPACITY.expect("global initialisation")));
 let sourceEnd: i128 = (source).checked_add(length).expect("BigInt arithmetic");
 let mut slot: f64 = 0.0f64;
-'__crust_v35: while (slot < capacity) {
+'__crust_v36: while (slot < capacity) {
 {
 let entry: f64 = (table + (slot * ctx.globals.m_native__abi__THISTLE_PAGE_ENTRY_SIZE.expect("global initialisation")));
 let key: i128 = crate::m_native__memory::atomicLoadU64(ctx, memory, entry);
 if (key == 0i128) {
 {
 let _ = { slot = (slot + 1.0f64); slot };
-continue '__crust_v35;
+continue '__crust_v36;
 }
 }
 let page: i128 = numbers::big_shl(((key).checked_sub(1i128).expect("BigInt arithmetic")), 16i128);
@@ -1478,7 +1530,7 @@ let pageEnd: i128 = (page).checked_add(crate::m_native__word::ux(ctx, crate::m_n
 if ((source >= pageEnd) || (sourceEnd <= page)) {
 {
 let _ = { slot = (slot + 1.0f64); slot };
-continue '__crust_v35;
+continue '__crust_v36;
 }
 }
 let low: i128 = (if (source > page) { source } else { page });
@@ -1519,7 +1571,7 @@ return (22i128).checked_neg().expect("BigInt negation");
 let count: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
 let mut index: f64 = 0.0f64;
 let mut found: f64 = count;
-'__crust_v36: while (index < count) {
+'__crust_v37: while (index < count) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 if (((crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation"))) == oldAddress) && (crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_END.expect("global initialisation"))) == (oldAddress).checked_add(oldSize).expect("BigInt arithmetic"))) && (crate::m_native__memory::loadU32(ctx, memory, (mapping + ctx.globals.m_native__abi__M_BACKING.expect("global initialisation"))) == ctx.globals.m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS.expect("global initialisation"))) {
@@ -1589,7 +1641,7 @@ return ctx.globals.m_native__kernel__MAP_NOT_OWNED.expect("global initialisation
 }
 let count: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
 let mut index: f64 = 0.0f64;
-'__crust_v37: while (index < count) {
+'__crust_v38: while (index < count) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, index);
 if (((address < crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_END.expect("global initialisation")))) && (end > crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation"))))) && (crate::m_native__memory::loadU32(ctx, memory, (mapping + ctx.globals.m_native__abi__M_BACKING.expect("global initialisation"))) != ctx.globals.m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS.expect("global initialisation"))) {
@@ -1638,7 +1690,7 @@ return (if (pointer == ctx.globals.m_native__kernel__UNMAPPED_POINTER.expect("gl
 pub fn guestLoadU64<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut hart: f64, mut address: i128, mut size: f64) -> i128 {
 let mut value: i128 = 0i128;
 let mut index: f64 = 0.0f64;
-'__crust_v38: while (index < size) {
+'__crust_v39: while (index < size) {
 {
 let byte: f64 = crate::m_native__kernel::guestLoadU8(ctx, memory, hart, (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, index))).expect("BigInt arithmetic"));
 if (byte < 0.0f64) {
@@ -1658,7 +1710,7 @@ return false;
 }
 let _ = crate::m_native__kernel::traceNodePointerWrite(ctx, memory, hart, address, value, size);
 let mut index: f64 = 0.0f64;
-'__crust_v39: while (index < size) {
+'__crust_v40: while (index < size) {
 {
 let pointer: f64 = crate::m_native__kernel::guestPointer(ctx, memory, hart, (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, index))).expect("BigInt arithmetic"), 1.0f64, true);
 if ((pointer == ctx.globals.m_native__kernel__INVALID_POINTER.expect("global initialisation")) || (pointer == ctx.globals.m_native__kernel__UNMAPPED_POINTER.expect("global initialisation"))) {
@@ -1677,7 +1729,7 @@ if (!crate::m_native__kernel::guestRange(ctx, memory, hart, address, size)) {
 return false;
 }
 let mut offset: f64 = 0.0f64;
-'__crust_v40: while (offset < size) {
+'__crust_v41: while (offset < size) {
 {
 let current: i128 = (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, offset))).expect("BigInt arithmetic");
 let page: f64 = crate::m_native__kernel::guestPage(ctx, memory, hart, current, true);
@@ -1734,7 +1786,7 @@ return ctx.globals.m_native__abi__THISTLE_THX_OK.expect("global initialisation")
 
 pub fn thistleImageSegment<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut hart: f64, mut nameHash: f64, mut nameLength: f64, mut address: i128, mut size: i128, mut flags: f64, mut imageAt: f64, mut length: f64) -> f64 {
 let proc: f64 = (if crate::m_native__kernel::validHart(ctx, memory, hart) { crate::m_native__kernel::processForHart(ctx, memory, hart) } else { ctx.globals.m_native__kernel__INVALID_POINTER.expect("global initialisation") });
-if ((((proc == ctx.globals.m_native__kernel__INVALID_POINTER.expect("global initialisation")) || { let __crust_v41 = length; let __crust_v42 = size; numbers::compare_number_bigint(__crust_v41, __crust_v42).is_some_and(|order| order.is_gt()) }) || (flags > 7.0f64)) || (!crate::m_native__kernel::thistleImageContains(ctx, memory, imageAt, length))) {
+if ((((proc == ctx.globals.m_native__kernel__INVALID_POINTER.expect("global initialisation")) || { let __crust_v42 = length; let __crust_v43 = size; numbers::compare_number_bigint(__crust_v42, __crust_v43).is_some_and(|order| order.is_gt()) }) || (flags > 7.0f64)) || (!crate::m_native__kernel::thistleImageContains(ctx, memory, imageAt, length))) {
 return ctx.globals.m_native__abi__THISTLE_THX_SECTION.expect("global initialisation");
 }
 let top: i128 = crate::m_native__memory::atomicLoadU64(ctx, memory, (proc + ctx.globals.m_native__abi__P_VIRTUAL_TOP.expect("global initialisation")));
@@ -1749,7 +1801,7 @@ return ctx.globals.m_native__abi__THISTLE_THX_SECTION.expect("global initialisat
 }
 let table: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_SEGMENT_TABLE.expect("global initialisation")));
 let mut index: f64 = 0.0f64;
-'__crust_v43: while (index < count) {
+'__crust_v44: while (index < count) {
 {
 let segment: f64 = (table + (index * ctx.globals.m_native__abi__THISTLE_SEGMENT_STRIDE.expect("global initialisation")));
 let left: i128 = crate::m_native__memory::loadU64(ctx, memory, (segment + ctx.globals.m_native__abi__S_ADDRESS.expect("global initialisation")));
@@ -1767,7 +1819,7 @@ if ((length > 0.0f64) && (!crate::m_native__kernel::guestWritable(ctx, memory, h
 return ctx.globals.m_native__abi__THISTLE_THX_MEMORY.expect("global initialisation");
 }
 let mut copied: f64 = 0.0f64;
-'__crust_v44: while (copied < length) {
+'__crust_v45: while (copied < length) {
 {
 let guest: i128 = (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, copied))).expect("BigInt arithmetic");
 let frame: f64 = crate::m_native__kernel::guestPage(ctx, memory, hart, guest, false);
@@ -1779,7 +1831,7 @@ let remaining: f64 = (length - copied);
 let room: f64 = (ctx.globals.m_native__abi__THISTLE_GUEST_PAGE_SIZE.expect("global initialisation") - within);
 let amount: f64 = (if (room < remaining) { room } else { remaining });
 let mut offset: f64 = 0.0f64;
-'__crust_v45: while (offset < amount) {
+'__crust_v46: while (offset < amount) {
 {
 let _ = crate::m_native__memory::storeU8(ctx, memory, ((frame + within) + offset), Numeric::BigInt(crate::m_native__word::word(ctx, crate::m_native__memory::loadU8(ctx, memory, ((imageAt + copied) + offset)))));
 let _ = { offset = (offset + 1.0f64); offset };
@@ -1816,7 +1868,7 @@ let table: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globa
 let entry: i128 = crate::m_native__memory::atomicLoadU64(ctx, memory, (proc + ctx.globals.m_native__abi__P_IMAGE_ENTRY.expect("global initialisation")));
 let mut index: f64 = 0.0f64;
 let mut executable: bool = false;
-'__crust_v46: while (index < count) {
+'__crust_v47: while (index < count) {
 {
 let segment: f64 = (table + (index * ctx.globals.m_native__abi__THISTLE_SEGMENT_STRIDE.expect("global initialisation")));
 if ((((numbers::and(crate::m_native__memory::loadU32(ctx, memory, (segment + ctx.globals.m_native__abi__S_FLAGS.expect("global initialisation"))), ctx.globals.m_native__abi__THISTLE_SEGMENT_EXECUTE.expect("global initialisation"))) != 0.0f64) && (entry >= crate::m_native__memory::loadU64(ctx, memory, (segment + ctx.globals.m_native__abi__S_ADDRESS.expect("global initialisation"))))) && (entry < crate::m_native__memory::loadU64(ctx, memory, (segment + ctx.globals.m_native__abi__S_END.expect("global initialisation"))))) {
@@ -1852,7 +1904,7 @@ if (!crate::m_native__kernel::guestWritable(ctx, memory, hart, stackPointer, len
 return ctx.globals.m_native__abi__THISTLE_START_MEMORY.expect("global initialisation");
 }
 let mut cleared: f64 = 0.0f64;
-'__crust_v47: while (cleared < length) {
+'__crust_v48: while (cleared < length) {
 {
 let guest: i128 = (stackPointer).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, cleared))).expect("BigInt arithmetic");
 let frame: f64 = crate::m_native__kernel::guestPage(ctx, memory, hart, guest, false);
@@ -1883,7 +1935,7 @@ if ((length > 0.0f64) && (!crate::m_native__kernel::guestWritable(ctx, memory, h
 return ctx.globals.m_native__abi__THISTLE_START_MEMORY.expect("global initialisation");
 }
 let mut copied: f64 = 0.0f64;
-'__crust_v48: while (copied < length) {
+'__crust_v49: while (copied < length) {
 {
 let guest: i128 = (destination).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, copied))).expect("BigInt arithmetic");
 let frame: f64 = crate::m_native__kernel::guestPage(ctx, memory, hart, guest, false);
@@ -1895,7 +1947,7 @@ let remaining: f64 = (length - copied);
 let room: f64 = (ctx.globals.m_native__abi__THISTLE_GUEST_PAGE_SIZE.expect("global initialisation") - within);
 let amount: f64 = (if (room < remaining) { room } else { remaining });
 let mut offset: f64 = 0.0f64;
-'__crust_v49: while (offset < amount) {
+'__crust_v50: while (offset < amount) {
 {
 let _ = crate::m_native__memory::storeU8(ctx, memory, ((frame + within) + offset), Numeric::BigInt(crate::m_native__word::word(ctx, crate::m_native__memory::loadU8(ctx, memory, ((source + copied) + offset)))));
 let _ = { offset = (offset + 1.0f64); offset };
@@ -2715,7 +2767,7 @@ if (((address == 0i128) || (!crate::m_native__kernel::guestAllowed(ctx, memory, 
 return (14i128).checked_neg().expect("BigInt negation");
 }
 let mut index: f64 = 0.0f64;
-'__crust_v50: while (index < count) {
+'__crust_v51: while (index < count) {
 {
 let gid: i128 = crate::m_native__kernel::procId(ctx, memory, proc, (ctx.globals.m_native__abi__P_GROUPS.expect("global initialisation") + (index * 4.0f64)));
 if (!crate::m_native__kernel::guestStoreU64(ctx, memory, hart, (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, (index * 4.0f64)))).expect("BigInt arithmetic"), gid, 4.0f64)) {
@@ -2742,7 +2794,7 @@ if ((count != 0.0f64) && (((address == 0i128) || (!crate::m_native__kernel::gues
 return (14i128).checked_neg().expect("BigInt negation");
 }
 let mut index: f64 = 0.0f64;
-'__crust_v51: while (index < count) {
+'__crust_v52: while (index < count) {
 {
 let value: i128 = crate::m_native__kernel::guestLoadU64(ctx, memory, hart, (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, (index * 4.0f64)))).expect("BigInt arithmetic"), 4.0f64);
 if (value >= 4294967295i128) {
@@ -2752,7 +2804,7 @@ let _ = { index = (index + 1.0f64); index };
 }
 }
 let _ = { index = 0.0f64; index };
-'__crust_v52: while (index < count) {
+'__crust_v53: while (index < count) {
 {
 let _ = crate::m_native__kernel::storeProcId(ctx, memory, proc, (ctx.globals.m_native__abi__P_GROUPS.expect("global initialisation") + (index * 4.0f64)), crate::m_native__kernel::guestLoadU64(ctx, memory, hart, (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, (index * 4.0f64)))).expect("BigInt arithmetic"), 4.0f64));
 let _ = { index = (index + 1.0f64); index };
@@ -2843,7 +2895,7 @@ let stack: i128 = crate::m_native__memory::atomicLoadU64(ctx, memory, (proc + ct
 let mut collision: bool = false;
 let mapCount: f64 = crate::m_native__memory::loadU32(ctx, memory, (proc + ctx.globals.m_native__abi__P_MAP_COUNT.expect("global initialisation")));
 let mut mapIndex: f64 = 0.0f64;
-'__crust_v53: while (mapIndex < mapCount) {
+'__crust_v54: while (mapIndex < mapCount) {
 {
 let mapping: f64 = crate::m_native__kernel::mapAt(ctx, memory, proc, mapIndex);
 let start: i128 = crate::m_native__memory::loadU64(ctx, memory, (mapping + ctx.globals.m_native__abi__M_ADDRESS.expect("global initialisation")));
@@ -2883,7 +2935,7 @@ return ctx.globals.m_native__abi__THISTLE_BATCH_SYSCALL.expect("global initialis
 
 pub fn copyGuestPath<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut hart: f64, mut address: i128, mut scratch: f64) -> f64 {
 let mut length: f64 = 0.0f64;
-'__crust_v54: while (length < ctx.globals.m_native__abi__THISTLE_VFS_PATH_CAPACITY.expect("global initialisation")) {
+'__crust_v55: while (length < ctx.globals.m_native__abi__THISTLE_VFS_PATH_CAPACITY.expect("global initialisation")) {
 {
 let current: i128 = (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, length))).expect("BigInt arithmetic");
 if ((current < address) || (!crate::m_native__kernel::guestAllowed(ctx, memory, hart, current, 1.0f64, ctx.globals.m_native__abi__THISTLE_SEGMENT_READ.expect("global initialisation")))) {
@@ -2960,10 +3012,10 @@ if (result < 0.0f64) {
 return crate::m_native__word::word(ctx, result);
 }
 let mut copied: f64 = 0.0f64;
-'__crust_v55: while (copied < crate::m_native__word::wordToU32(ctx, crate::m_native__word::word(ctx, result))) {
+'__crust_v56: while (copied < crate::m_native__word::wordToU32(ctx, crate::m_native__word::word(ctx, result))) {
 {
 if (!crate::m_native__kernel::guestStoreU64(ctx, memory, hart, (address).checked_add(crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, copied))).expect("BigInt arithmetic"), crate::m_native__word::ux(ctx, crate::m_native__word::word(ctx, crate::m_native__memory::loadU8(ctx, memory, (scratch + copied)))), 1.0f64)) {
-break '__crust_v55;
+break '__crust_v56;
 }
 let _ = { copied = (copied + 1.0f64); copied };
 }
@@ -3149,6 +3201,12 @@ if (!crate::m_native__kernel::acquire(ctx, memory, lock)) {
 {
 let _ = crate::m_native__kernel::setPc(ctx, memory, hart, (crate::m_native__memory::loadU64(ctx, memory, (at + ctx.globals.m_native__abi__H_PC.expect("global initialisation")))).checked_sub(4i128).expect("BigInt arithmetic"));
 return ctx.globals.m_native__abi__THISTLE_BATCH_CONTENDED.expect("global initialisation");
+}
+}
+if crate::m_native__kernel::overlapsHostFile(ctx, memory, proc, crate::m_native__word::ux(ctx, crate::m_native__kernel::x(ctx, memory, hart, 10.0f64)), crate::m_native__word::ux(ctx, crate::m_native__kernel::x(ctx, memory, hart, 11.0f64))) {
+{
+let _ = crate::m_native__kernel::release(ctx, memory, lock);
+return crate::m_native__kernel::fallbackSyscall(ctx, memory, hart);
 }
 }
 let result: i128 = crate::m_native__kernel::anonymousUnmap(ctx, memory, proc, crate::m_native__word::ux(ctx, crate::m_native__kernel::x(ctx, memory, hart, 10.0f64)), crate::m_native__word::ux(ctx, crate::m_native__kernel::x(ctx, memory, hart, 11.0f64)));
@@ -3701,7 +3759,7 @@ let _ = { result = (if (status == ctx.globals.m_native__abi__THISTLE_HART_EXITED
 }
 if (status == ctx.globals.m_native__abi__THISTLE_HART_RUNNABLE.expect("global initialisation")) {
 {
-'__crust_v56: while ((count < budget) && (result == ctx.globals.m_native__abi__THISTLE_BATCH_BUDGET.expect("global initialisation"))) {
+'__crust_v57: while ((count < budget) && (result == ctx.globals.m_native__abi__THISTLE_BATCH_BUDGET.expect("global initialisation"))) {
 {
 let _ = { result = crate::m_native__kernel::step(ctx, memory, hart, nowMicros); result };
 let _ = crate::m_native__kernel::bump(ctx, memory, (at + ctx.globals.m_native__abi__H_INSTRUCTIONS.expect("global initialisation")));
@@ -3761,7 +3819,7 @@ return ctx.globals.m_native__abi__THISTLE_BATCH_CONTENDED.expect("global initial
 let maxHarts: f64 = crate::m_native__memory::loadU32(ctx, memory, (ctx.globals.m_native__abi__THISTLE_CONTROL_BASE.expect("global initialisation") + ctx.globals.m_native__abi__C_MAX_HARTS.expect("global initialisation")));
 let start: f64 = (crate::m_native__memory::loadU32(ctx, memory, (ctx.globals.m_native__abi__THISTLE_CONTROL_BASE.expect("global initialisation") + ctx.globals.m_native__abi__C_SCHED_CURSOR.expect("global initialisation"))) % maxHarts);
 let mut scan: f64 = 0.0f64;
-'__crust_v57: while (scan < maxHarts) {
+'__crust_v58: while (scan < maxHarts) {
 {
 let hart: f64 = (((start + scan)) % maxHarts);
 let at: f64 = crate::m_native__kernel::hartAt(ctx, hart);

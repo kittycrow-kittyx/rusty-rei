@@ -101,19 +101,19 @@ return ctx.platform.__bake_c_view_get_i64((memory).view, at, Some(true));
 
 pub fn storeU8<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut at: f64, mut value: Numeric) -> () {
 let _ = crate::m_native__memory::range(ctx, memory, at, 1.0f64);
-let _ = ctx.platform.__bake_c_u8_set((memory).bytes, at, numbers::and(numbers::number(value), 255.0f64));
+let _ = ctx.platform.__bake_c_u8_set((memory).bytes, at, numbers::number(Numeric::BigInt(numbers::as_uint_n(8.0f64, numbers::bigint(value)))));
 }
 
 
 pub fn storeU16<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut at: f64, mut value: Numeric) -> () {
 let _ = crate::m_native__memory::range(ctx, memory, at, 2.0f64);
-let _ = ctx.platform.__bake_c_view_set_u16((memory).view, at, numbers::number(value), Some(true));
+let _ = ctx.platform.__bake_c_view_set_u16((memory).view, at, numbers::number(Numeric::BigInt(numbers::as_uint_n(16.0f64, numbers::bigint(value)))), Some(true));
 }
 
 
 pub fn storeU32<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut at: f64, mut value: Numeric) -> () {
 let _ = crate::m_native__memory::range(ctx, memory, at, 4.0f64);
-let _ = ctx.platform.__bake_c_view_set_u32((memory).view, at, numbers::number(value), Some(true));
+let _ = ctx.platform.__bake_c_view_set_u32((memory).view, at, numbers::number(Numeric::BigInt(numbers::as_uint_n(32.0f64, numbers::bigint(value)))), Some(true));
 }
 
 

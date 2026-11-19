@@ -256,6 +256,7 @@ pub struct Globals {
     pub(crate) m_native__abi__M_FILE_OFFSET: Option<f64>,
     pub(crate) m_native__abi__M_BACKING: Option<f64>,
     pub(crate) m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_MAP_BACKING_HOST_FILE: Option<f64>,
     pub(crate) m_native__abi__THISTLE_VFS_INODE_STRIDE: Option<f64>,
     pub(crate) m_native__abi__THISTLE_VFS_INODE_CAPACITY: Option<f64>,
     pub(crate) m_native__abi__THISTLE_VFS_DENTRY_STRIDE: Option<f64>,
@@ -585,6 +586,7 @@ impl<P: Platform> Context<P> {
             m_native__abi__M_FILE_OFFSET: None,
             m_native__abi__M_BACKING: None,
             m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS: None,
+            m_native__abi__THISTLE_MAP_BACKING_HOST_FILE: None,
             m_native__abi__THISTLE_VFS_INODE_STRIDE: None,
             m_native__abi__THISTLE_VFS_INODE_CAPACITY: None,
             m_native__abi__THISTLE_VFS_DENTRY_STRIDE: None,
@@ -909,6 +911,7 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__M_FILE_OFFSET = Some(32.0f64);
         ctx.globals.m_native__abi__M_BACKING = Some(40.0f64);
         ctx.globals.m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_MAP_BACKING_HOST_FILE = Some(1.0f64);
         ctx.globals.m_native__abi__THISTLE_VFS_INODE_STRIDE = Some(64.0f64);
         ctx.globals.m_native__abi__THISTLE_VFS_INODE_CAPACITY = Some(4096.0f64);
         ctx.globals.m_native__abi__THISTLE_VFS_DENTRY_STRIDE = Some(24.0f64);
