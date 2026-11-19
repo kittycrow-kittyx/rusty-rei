@@ -1,20 +1,28 @@
 # Rusty Rei
 
-**REI** stands for **Rei Executes Independently**.
+**REI**: Rei Executes Independently.
 
-Rusty Rei is the platform-independent native Rust kernel generated from canonical Thistle through Bake and Crust. The generated source is committed in `src/`. It contains no C kernel or hardware-specific runtime.
+Rusty Rei is a platform-independent freestanding Rust kernel generated from
+Thistle. The generated crate is committed in `src/`.
 
 ## Build
 
-Only Rust and Cargo are required to compile the committed source.
+Requires Rust and Cargo.
 
 ```sh
 rustup target add x86_64-unknown-none aarch64-unknown-none
 bash scripts/build.sh
 ```
 
-The build produces freestanding libraries for both architectures. A downstream platform supplies the intrinsic implementation and links its own image.
+The build produces libraries for both targets. The platform supplies the
+intrinsic trait implementation and links its image separately.
 
-See [build instructions](docs/build.md) to regenerate the source and [provenance](docs/provenance.md) for the pinned compiler and kernel revisions.
+## Source generation
 
-Source generation runs in GitHub Actions against the pinned toolchain. Compiled libraries, objects and images are not committed.
+The pinned Thistle, Bake and Crust revisions define the source snapshot.
+See [build instructions](docs/build.md) for regeneration and
+[provenance](docs/provenance.md) for the exact revisions.
+
+## Licence
+
+[MIT](LICENSE).
