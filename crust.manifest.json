@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "format": "freestanding-rust",
+  "intrinsicAbi": 1,
+  "numericRepresentation": {
+    "number": "f64",
+    "bigint": "checked-i128"
+  },
+  "modules": [
+    {
+      "source": "core/native-types.ts",
+      "rustModule": "m_core__native_types"
+    },
+    {
+      "source": "native/types.ts",
+      "rustModule": "m_native__types"
+    },
+    {
+      "source": "native/abi.ts",
+      "rustModule": "m_native__abi"
+    },
+    {
+      "source": "core/rv64-branch.ts",
+      "rustModule": "m_core__rv64_branch"
+    },
+    {
+      "source": "core/rv64-numbers.ts",
+      "rustModule": "m_core__rv64_numbers"
+    },
+    {
+      "source": "vm/rv64-immediate.ts",
+      "rustModule": "m_vm__rv64_immediate"
+    },
+    {
+      "source": "core/rv64-arithmetic.ts",
+      "rustModule": "m_core__rv64_arithmetic"
+    },
+    {
+      "source": "core/rv64-word.ts",
+      "rustModule": "m_core__rv64_word"
+    },
+    {
+      "source": "core/rv64-immediate-op.ts",
+      "rustModule": "m_core__rv64_immediate_op"
+    },
+    {
+      "source": "core/rv64-register.ts",
+      "rustModule": "m_core__rv64_register"
+    },
+    {
+      "source": "core/rv64-fclass.ts",
+      "rustModule": "m_core__rv64_fclass"
+    },
+    {
+      "source": "native/memory.ts",
+      "rustModule": "m_native__memory"
+    },
+    {
+      "source": "native/word.ts",
+      "rustModule": "m_native__word"
+    },
+    {
+      "source": "native/vfs.ts",
+      "rustModule": "m_native__vfs"
+    },
+    {
+      "source": "native/kernel.ts",
+      "rustModule": "m_native__kernel"
+    },
+    {
+      "source": "native/start.ts",
+      "rustModule": "m_native__start"
+    },
+    {
+      "source": "native/thx.ts",
+      "rustModule": "m_native__thx"
+    }
+  ],
+  "functions": 278,
+  "globals": 316,
+  "platformIntrinsics": 36
+}

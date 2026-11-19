@@ -1,47 +1,30 @@
-# Building Rei
+# Building Rusty Rei
 
-## Pinned dependencies
+## Compile the snapshot
 
-After cloning Rei, initialise its Git submodules:
+From a normal checkout, install the Rust targets and build:
+
+```sh
+rustup target add x86_64-unknown-none aarch64-unknown-none
+bash scripts/build.sh
+```
+
+The checked-in Rust files and Cargo manifest are sufficient. Submodules, Node.js, npm and Bun are not needed. The script builds both targets with warnings denied and at most two jobs, or accepts either target triple:
+
+```sh
+bash scripts/build.sh aarch64-unknown-none
+```
+
+Libraries are written to `target/<triple>/release/libcrust_kernel.rlib`. A downstream platform supplies the generated `Platform` trait implementation and links an image. Rusty Rei itself defines no boot protocol, board support or image layout.
+
+## Regenerate the snapshot
+
+Install Git, Bun, Node.js and npm and obtain access to the pinned compiler repositories.
 
 ```sh
 git submodule update --init --recursive
-bash scripts/verify-pins.sh
-```
-
-`thistle/`, `bake/` and `croissant/` are pinned to the precise Git
-revisions that produced the initial generated snapshot. Upstream `main`
-moving must not silently change a Rei build. Access to the private
-Croissant repository is required to initialise that submodule.
-
-## Rebuild committed C
-
-The existing generated sources and native objects are build snapshots.
-To compile the currently committed C without regenerating it:
-
-```sh
-cmake -S . -B build
-cmake --build build --parallel
-```
-
-To regenerate from the pinned TypeScript source, use:
-
-```sh
 bash scripts/regenerate.sh
+bash scripts/build.sh
 ```
 
-The regeneration script builds Bake and Croissant, performs
-`Bake --target=clang --engine=host`, emits a modular C tree, refreshes
-only previously generated `src/` and `include/` files, recompiles
-the native objects and updates the snapshot checksums.
-
-Run it on a clean working tree. Review all generated changes before
-committing them. Submodule updates and regenerated outputs should be
-reviewed together.
-
-## Current boundary
-
-The build produces relocatable object files, not a linked Rei image.
-`__bake_c_*` and `croissant_js_*` calls still require a native
-runtime implementation, followed by architecture-specific platform
-integration and linking.
+Bake lowers the pinned canonical Thistle source and Crust emits Rust. GitHub Actions regenerates and uploads the source snapshot and checks that it matches the committed files. Compilation outputs remain local. Review and commit the regenerated source, Cargo manifest and compiler manifest together. Do not edit generated kernel modules independently.

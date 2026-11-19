@@ -1,154 +1,59 @@
-name: Rei native build
+name: Rusty Rei native build
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regenerate Rust from the pinned toolchain
+        run: bash scripts/regenerate.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rusty-rei-generated-source
+          path: |
+            src/
+            Cargo.toml
+            crust.manifest.json
+          if-no-files-found: error
+      - name: Verify committed source matches regeneration
+        run: |
+          git add -A -- src Cargo.toml crust.manifest.json
+          git diff --cached --exit-code
   native:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Verify pinned source revisions and build scripts
-        run: |
-          bash -n scripts/verify-pins.sh scripts/regenerate.sh
-          bash scripts/verify-pins.sh
-
-      - name: Verify generated artefacts
-        run: sha256sum -c SHA256SUMS
-
-      - name: Compile with CMake
-        run: |
-          cmake -S . -B build
-          cmake --build build --parallel
-
-      - name: Verify kernel symbol
-        run: |
-          nm -g build/CMakeFiles/rei_kernel.dir/src/native/kernel.c.o |
-            grep croissant_native_kernel_ts__tetoKernelInit
-
-      - name: Compile both bare-metal architectures
+      - name: Verify committed Rust snapshot
         shell: bash
         run: |
-          set -euo pipefail
-          for arch in x86_64 aarch64; do
-            case "$arch" in
-              x86_64) triple=x86_64-unknown-none-elf ;;
-              aarch64) triple=aarch64-none-elf ;;
-            esac
-            while IFS= read -r -d '' source; do
-              relative="${source#src/}"
-              output="build/cross/$arch/${relative%.c}.o"
-              mkdir -p "$(dirname "$output")"
-              clang --target="$triple" -std=c11 -O1 \
-                -ffreestanding -fno-builtin -fno-stack-protector \
-                -Werror -Iinclude -c "$source" -o "$output"
-            done < <(find src -type f -name '*.c' -print0)
-          done
-
-  fresh-clone:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone the requested Git ref into an empty workspace
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REI_REF: ${{ github.head_ref || github.ref_name }}
-        run: |
-          set -euo pipefail
-          header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $header" \
-            clone --single-branch --branch "$REI_REF" \
-            https://github.com/kitty-crow/rei.git "$RUNNER_TEMP/rei-fresh"
-          cd "$RUNNER_TEMP/rei-fresh"
-          test "$(git branch --show-current)" = "$REI_REF"
-          git log -1 --format='%H %s'
-          test -f .gitmodules
-          for module in bake croissant thistle; do
-            git ls-tree HEAD "$module" | grep '^160000 commit '
-          done
-
-      - name: Check checksums and provenance from fresh clone
-        working-directory: ${{ runner.temp }}/rei-fresh
-        shell: bash
-        run: |
-          set -euo pipefail
-          bash -n scripts/verify-pins.sh scripts/regenerate.sh
-          bash scripts/verify-pins.sh
-          sha256sum -c SHA256SUMS >/dev/null
-          test -z "$(git status --porcelain --untracked-files=no)"
-          echo "Pinned source revisions and committed generated artefacts verified"
-
-      - name: Configure and compile twice from clean state
-        working-directory: ${{ runner.temp }}/rei-fresh
-        shell: bash
-        run: |
-          set -euo pipefail
-          cmake -S . -B "$RUNNER_TEMP/rei-fresh-build"
-          cmake --build "$RUNNER_TEMP/rei-fresh-build" --parallel 2
-          test "$(find "$RUNNER_TEMP/rei-fresh-build/CMakeFiles/rei_kernel.dir/src" -name '*.o' | wc -l)" -eq 18
-          nm -g "$RUNNER_TEMP/rei-fresh-build/CMakeFiles/rei_kernel.dir/src/native/kernel.c.o" |
-            grep croissant_native_kernel_ts__tetoKernelInit
-
-          find "$RUNNER_TEMP/rei-fresh-build/CMakeFiles/rei_kernel.dir/src" \
-            -type f -name '*.o' -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/objects-before"
-          cmake -S . -B "$RUNNER_TEMP/rei-fresh-build"
-          cmake --build "$RUNNER_TEMP/rei-fresh-build" --parallel 2
-          find "$RUNNER_TEMP/rei-fresh-build/CMakeFiles/rei_kernel.dir/src" \
-            -type f -name '*.o' -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/objects-after"
-          diff -u "$RUNNER_TEMP/objects-before" "$RUNNER_TEMP/objects-after"
-          test -z "$(git status --porcelain --untracked-files=no)"
-          echo "Repeated configuration and compilation preserved every native object"
-
-      - name: Independently cross-compile all C modules
-        working-directory: ${{ runner.temp }}/rei-fresh
-        shell: bash
-        run: |
-          set -euo pipefail
-          for arch in x86_64 aarch64; do
-            case "$arch" in
-              x86_64) triple=x86_64-unknown-none-elf ;;
-              aarch64) triple=aarch64-none-elf ;;
-            esac
-            while IFS= read -r -d '' source; do
-              relative="${source#src/}"
-              output="$RUNNER_TEMP/rei-cross/$arch/${relative%.c}.o"
-              mkdir -p "$(dirname "$output")"
-              clang --target="$triple" -std=c11 -O1 -ffreestanding \
-                -fno-builtin -fno-stack-protector -Werror \
-                -Iinclude -c "$source" -o "$output"
-            done < <(find src -type f -name '*.c' -print0 | sort -z)
-            test "$(find "$RUNNER_TEMP/rei-cross/$arch" -name '*.o' | wc -l)" -eq 18
-            file "$RUNNER_TEMP/rei-cross/$arch/native/kernel.o"
-            nm -g "$RUNNER_TEMP/rei-cross/$arch/native/kernel.o" |
-              grep croissant_native_kernel_ts__tetoKernelInit
-          done
-
-  raspi3b-qemu:
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install ARM64 bare-metal emulator and toolchain
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends qemu-system-arm llvm lld
-
-      - name: Boot Rei's generated Thistle smoke under Raspberry Pi 3B
-        env:
-          REI_QEMU_TIMEOUT: '8'
-        run: bash scripts/qemu-raspi3b-smoke.sh </dev/null > build-smoke.log 2>&1 || { cat build-smoke.log; exit 1; }
-
-      - name: Verify redirected test captured guest UART
-        run: |
-          cat build-smoke.log
-          grep -F 'REI: THISTLE GENERATED CORE PASS' build/qemu/raspi3b/serial.log
-          bash scripts/qemu-raspi3b-smoke.sh --build-only
-
+          test -f Cargo.toml
+          test -f crust.manifest.json
+          test -f src/lib.rs
+          test -z "$(git ls-files -- '*.c' '*.h' '*.S')"
+          test -z "$(git ls-files -- dist platform target '*.o' '*.a' '*.so' '*.elf' '*.img' '*.bin' '*.wasm' '*.rlib')"
+          test ! -e platform
+          bash -n scripts/build.sh scripts/regenerate.sh scripts/verify-pins.sh
+          grep -Fxq '#![no_std]' src/lib.rs
+          grep -Fxq '#![forbid(unsafe_code)]' src/lib.rs
+      - name: Install bare-metal targets
+        run: rustup target add x86_64-unknown-none aarch64-unknown-none
+      - name: Compile checked-in Rust with warnings denied
+        run: bash scripts/build.sh
+      - name: Verify clean checkout
+        run: test -z "$(git status --porcelain)"

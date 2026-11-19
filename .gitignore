@@ -1,7 +1,12 @@
 /build/
-/CMakeFiles/
-/CMakeCache.txt
-/cmake_install.cmake
-/compile_commands.json
+/target/
+/Cargo.lock
 *.tmp
-*.bak
+
+/dist/
+*.o
+*.a
+*.elf
+*.img
+*.bin
+*.rlib
