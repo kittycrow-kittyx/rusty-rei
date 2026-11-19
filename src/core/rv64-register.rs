@@ -11,10 +11,7 @@ return (if ((top == 32.0f64) && (((funct3 == 0.0f64) || (funct3 == 5.0f64)))) { 
 }
 
 
-pub fn rv64RegisterValue<P: Platform>(ctx: &Context<P>, mut funct3: f64, mut top: f64, mut left: i128, mut right: i128) -> i128 {
-let shift: i128 = (crate::m_core__rv64_numbers::ux(ctx, right) & 63i128);
-if (top == 1.0f64) {
-{
+pub fn rv64MultiplyDivide<P: Platform>(ctx: &Context<P>, mut funct3: f64, mut left: i128, mut right: i128) -> i128 {
 if (funct3 == 0.0f64) {
 return crate::m_core__rv64_numbers::sx(ctx, (left).checked_mul(right).expect("BigInt arithmetic"), 64.0f64);
 }
@@ -41,6 +38,12 @@ return crate::m_core__rv64_numbers::sx(ctx, crate::m_core__rv64_arithmetic::rv64
 }
 return 0i128;
 }
+
+
+pub fn rv64RegisterValue<P: Platform>(ctx: &Context<P>, mut funct3: f64, mut top: f64, mut left: i128, mut right: i128) -> i128 {
+let shift: i128 = (crate::m_core__rv64_numbers::ux(ctx, right) & 63i128);
+if (top == 1.0f64) {
+return crate::m_core__rv64_register::rv64MultiplyDivide(ctx, funct3, left, right);
 }
 if (funct3 == 0.0f64) {
 return crate::m_core__rv64_numbers::sx(ctx, (if (top == 0.0f64) { (left).checked_add(right).expect("BigInt arithmetic") } else { (left).checked_sub(right).expect("BigInt arithmetic") }), 64.0f64);

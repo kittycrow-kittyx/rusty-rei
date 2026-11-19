@@ -20,6 +20,14 @@
       "rustModule": "m_native__abi"
     },
     {
+      "source": "native/memory.ts",
+      "rustModule": "m_native__memory"
+    },
+    {
+      "source": "native/image-range.ts",
+      "rustModule": "m_native__image_range"
+    },
+    {
       "source": "core/rv64-branch.ts",
       "rustModule": "m_core__rv64_branch"
     },
@@ -52,8 +60,8 @@
       "rustModule": "m_core__rv64_fclass"
     },
     {
-      "source": "native/memory.ts",
-      "rustModule": "m_native__memory"
+      "source": "core/rv64-decode.ts",
+      "rustModule": "m_core__rv64_decode"
     },
     {
       "source": "native/word.ts",
@@ -76,7 +84,7 @@
       "rustModule": "m_native__thx"
     }
   ],
-  "functions": 278,
-  "globals": 316,
-  "platformIntrinsics": 36
+  "functions": 346,
+  "globals": 323,
+  "platformIntrinsics": 35
 }

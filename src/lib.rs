@@ -12,6 +12,8 @@ pub use numbers::Numeric;
 #[path = "core/native-types.rs"] pub mod m_core__native_types;
 #[path = "native/types.rs"] pub mod m_native__types;
 #[path = "native/abi.rs"] pub mod m_native__abi;
+#[path = "native/memory.rs"] pub mod m_native__memory;
+#[path = "native/image-range.rs"] pub mod m_native__image_range;
 #[path = "core/rv64-branch.rs"] pub mod m_core__rv64_branch;
 #[path = "core/rv64-numbers.rs"] pub mod m_core__rv64_numbers;
 #[path = "vm/rv64-immediate.rs"] pub mod m_vm__rv64_immediate;
@@ -20,7 +22,7 @@ pub use numbers::Numeric;
 #[path = "core/rv64-immediate-op.rs"] pub mod m_core__rv64_immediate_op;
 #[path = "core/rv64-register.rs"] pub mod m_core__rv64_register;
 #[path = "core/rv64-fclass.rs"] pub mod m_core__rv64_fclass;
-#[path = "native/memory.rs"] pub mod m_native__memory;
+#[path = "core/rv64-decode.rs"] pub mod m_core__rv64_decode;
 #[path = "native/word.rs"] pub mod m_native__word;
 #[path = "native/vfs.rs"] pub mod m_native__vfs;
 #[path = "native/kernel.rs"] pub mod m_native__kernel;
@@ -36,7 +38,6 @@ pub trait Platform {
     fn __bake_c_atomic_load_u64(&self, array: __bake_c_U64Array, at: f64) -> i128;
     fn __bake_c_atomic_store_i32(&self, array: __bake_c_I32Array, at: f64, value: f64) -> f64;
     fn __bake_c_atomic_store_u64(&self, array: __bake_c_U64Array, at: f64, value: i128) -> i128;
-    fn __bake_c_i32_get(&self, array: __bake_c_I32Array, at: f64) -> f64;
     fn __bake_c_i32_set(&self, array: __bake_c_I32Array, at: f64, value: f64) -> f64;
     fn __bake_c_new_buffer(&self, size: f64) -> __bake_c_Buffer;
     fn __bake_c_new_i32_array(&self, buffer: __bake_c_Buffer) -> __bake_c_I32Array;
@@ -46,7 +47,6 @@ pub trait Platform {
     fn __bake_c_new_view(&self, buffer: __bake_c_Buffer) -> __bake_c_View;
     fn __bake_c_u8_copy_within(&self, array: __bake_c_U8Array, target: f64, start: f64, end: Option<f64>) -> __bake_c_U8Array;
     fn __bake_c_u8_fill(&self, array: __bake_c_U8Array, value: f64, start: Option<f64>, end: Option<f64>) -> __bake_c_U8Array;
-    fn __bake_c_u8_get(&self, array: __bake_c_U8Array, at: f64) -> f64;
     fn __bake_c_u8_set(&self, array: __bake_c_U8Array, at: f64, value: f64) -> f64;
     fn __bake_c_view_get_i16(&self, view: __bake_c_View, at: f64, littleEndian: Option<bool>) -> f64;
     fn __bake_c_view_get_i32(&self, view: __bake_c_View, at: f64, littleEndian: Option<bool>) -> f64;
@@ -54,6 +54,7 @@ pub trait Platform {
     fn __bake_c_view_get_u16(&self, view: __bake_c_View, at: f64, littleEndian: Option<bool>) -> f64;
     fn __bake_c_view_get_u32(&self, view: __bake_c_View, at: f64, littleEndian: Option<bool>) -> f64;
     fn __bake_c_view_get_u64(&self, view: __bake_c_View, at: f64, littleEndian: Option<bool>) -> i128;
+    fn __bake_c_view_get_u8(&self, view: __bake_c_View, at: f64) -> f64;
     fn __bake_c_view_set_i32(&self, view: __bake_c_View, at: f64, value: f64, littleEndian: Option<bool>) -> ();
     fn __bake_c_view_set_i64(&self, view: __bake_c_View, at: f64, value: i128, littleEndian: Option<bool>) -> ();
     fn __bake_c_view_set_u16(&self, view: __bake_c_View, at: f64, value: f64, littleEndian: Option<bool>) -> ();
@@ -67,12 +68,12 @@ pub trait Platform {
 }
 
 pub struct Globals {
-    pub(crate) m_native__abi__TETO_MAGIC: Option<f64>,
-    pub(crate) m_native__abi__TETO_ABI_VERSION: Option<f64>,
-    pub(crate) m_native__abi__TETO_CONTROL_BASE: Option<f64>,
-    pub(crate) m_native__abi__TETO_CONTROL_SIZE: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_BASE: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_MAGIC: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_ABI_VERSION: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_CONTROL_BASE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_CONTROL_SIZE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_BASE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_STRIDE: Option<f64>,
     pub(crate) m_native__abi__C_MAGIC: Option<f64>,
     pub(crate) m_native__abi__C_ABI: Option<f64>,
     pub(crate) m_native__abi__C_FLAGS: Option<f64>,
@@ -122,11 +123,12 @@ pub struct Globals {
     pub(crate) m_native__abi__C_DESCRIPTOR_TABLE_BASE: Option<f64>,
     pub(crate) m_native__abi__C_DESCRIPTOR_CAPACITY: Option<f64>,
     pub(crate) m_native__abi__C_WORKER_BASE: Option<f64>,
-    pub(crate) m_native__abi__TETO_WORKER_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_WORKER_STRIDE: Option<f64>,
     pub(crate) m_native__abi__W_BATCHES: Option<f64>,
     pub(crate) m_native__abi__W_INSTRUCTIONS: Option<f64>,
     pub(crate) m_native__abi__W_IDLE: Option<f64>,
-    pub(crate) m_native__abi__TETO_FLAG_THREADED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FLAG_THREADED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FLAG_HOST_STDIN: Option<f64>,
     pub(crate) m_native__abi__H_LOCK: Option<f64>,
     pub(crate) m_native__abi__H_STATUS: Option<f64>,
     pub(crate) m_native__abi__H_EVENT: Option<f64>,
@@ -169,7 +171,7 @@ pub struct Globals {
     pub(crate) m_native__abi__H_FALLBACK_SYSCALLS: Option<f64>,
     pub(crate) m_native__abi__H_GROUP_COUNT: Option<f64>,
     pub(crate) m_native__abi__H_GROUPS: Option<f64>,
-    pub(crate) m_native__abi__TETO_GROUP_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_GROUP_CAPACITY: Option<f64>,
     pub(crate) m_native__abi__H_PROCESS_SLOT: Option<f64>,
     pub(crate) m_native__abi__H_IMAGE_FLOOR: Option<f64>,
     pub(crate) m_native__abi__H_IMAGE_LOADS: Option<f64>,
@@ -178,7 +180,7 @@ pub struct Globals {
     pub(crate) m_native__abi__H_STACK_POINTER: Option<f64>,
     pub(crate) m_native__abi__H_STARTUP_LOADS: Option<f64>,
     pub(crate) m_native__abi__H_FLOAT_SCRATCH: Option<f64>,
-    pub(crate) m_native__abi__TETO_PROCESS_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PROCESS_STRIDE: Option<f64>,
     pub(crate) m_native__abi__P_LOCK: Option<f64>,
     pub(crate) m_native__abi__P_STATE: Option<f64>,
     pub(crate) m_native__abi__P_PID: Option<f64>,
@@ -218,34 +220,34 @@ pub struct Globals {
     pub(crate) m_native__abi__P_UMASK: Option<f64>,
     pub(crate) m_native__abi__P_DESCRIPTOR_TABLE: Option<f64>,
     pub(crate) m_native__abi__P_DESCRIPTOR_CAPACITY: Option<f64>,
-    pub(crate) m_native__abi__TETO_DESCRIPTOR_STRIDE: Option<f64>,
-    pub(crate) m_native__abi__TETO_DESCRIPTOR_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_DESCRIPTOR_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_DESCRIPTOR_CAPACITY: Option<f64>,
     pub(crate) m_native__abi__FD_KIND: Option<f64>,
     pub(crate) m_native__abi__FD_FLAGS: Option<f64>,
     pub(crate) m_native__abi__FD_INODE: Option<f64>,
     pub(crate) m_native__abi__FD_OFFSET: Option<f64>,
     pub(crate) m_native__abi__FD_CURSOR: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_EMPTY: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_HOST: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_FILE: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_DIRECTORY: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_READ: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_WRITE: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_APPEND: Option<f64>,
-    pub(crate) m_native__abi__TETO_FD_CLOEXEC: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_PATH_CAPACITY: Option<f64>,
-    pub(crate) m_native__abi__TETO_SEGMENT_STRIDE: Option<f64>,
-    pub(crate) m_native__abi__TETO_SEGMENT_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_EMPTY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_HOST: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_FILE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_DIRECTORY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_READ: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_WRITE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_APPEND: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FD_CLOEXEC: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_PATH_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_SEGMENT_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_SEGMENT_CAPACITY: Option<f64>,
     pub(crate) m_native__abi__S_ADDRESS: Option<f64>,
     pub(crate) m_native__abi__S_END: Option<f64>,
     pub(crate) m_native__abi__S_FLAGS: Option<f64>,
     pub(crate) m_native__abi__S_NAME_HASH: Option<f64>,
     pub(crate) m_native__abi__S_NAME_LENGTH: Option<f64>,
-    pub(crate) m_native__abi__TETO_SEGMENT_READ: Option<f64>,
-    pub(crate) m_native__abi__TETO_SEGMENT_WRITE: Option<f64>,
-    pub(crate) m_native__abi__TETO_SEGMENT_EXECUTE: Option<f64>,
-    pub(crate) m_native__abi__TETO_MAP_STRIDE: Option<f64>,
-    pub(crate) m_native__abi__TETO_MAP_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_SEGMENT_READ: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_SEGMENT_WRITE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_SEGMENT_EXECUTE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_MAP_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_MAP_CAPACITY: Option<f64>,
     pub(crate) m_native__abi__M_ADDRESS: Option<f64>,
     pub(crate) m_native__abi__M_END: Option<f64>,
     pub(crate) m_native__abi__M_PROTECTION: Option<f64>,
@@ -253,12 +255,16 @@ pub struct Globals {
     pub(crate) m_native__abi__M_FILE_DESCRIPTOR: Option<f64>,
     pub(crate) m_native__abi__M_FILE_OFFSET: Option<f64>,
     pub(crate) m_native__abi__M_BACKING: Option<f64>,
-    pub(crate) m_native__abi__TETO_MAP_BACKING_ANONYMOUS: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_INODE_STRIDE: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_INODE_CAPACITY: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_DENTRY_STRIDE: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_DENTRY_CAPACITY: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_DATA_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_INODE_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_INODE_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_DENTRY_STRIDE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_DENTRY_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_DATA_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_MAX_INODE_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_MAX_DENTRY_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_MAX_DATA_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_MAX_IMAGE_SIZE: Option<f64>,
     pub(crate) m_native__abi__V_KIND: Option<f64>,
     pub(crate) m_native__abi__V_MODE: Option<f64>,
     pub(crate) m_native__abi__V_UID: Option<f64>,
@@ -277,68 +283,69 @@ pub struct Globals {
     pub(crate) m_native__abi__D_NAME_LENGTH: Option<f64>,
     pub(crate) m_native__abi__D_NAME_HASH: Option<f64>,
     pub(crate) m_native__abi__D_FLAGS: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_KIND_EMPTY: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_KIND_FILE: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_KIND_DIRECTORY: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_KIND_LINK: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_KIND_CHARACTER: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_IMAGE_MAGIC: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_IMAGE_VERSION: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_OK: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_RANGE: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_FORMAT: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_CHECKSUM: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_CAPACITY_ERROR: Option<f64>,
-    pub(crate) m_native__abi__TETO_VFS_DUPLICATE: Option<f64>,
-    pub(crate) m_native__abi__TETO_PARSER_BASE: Option<f64>,
-    pub(crate) m_native__abi__TETO_PARSER_STRING: Option<f64>,
-    pub(crate) m_native__abi__TETO_PARSER_STRING_LENGTH: Option<f64>,
-    pub(crate) m_native__abi__TETO_PARSER_STRING_ESCAPED: Option<f64>,
-    pub(crate) m_native__abi__TETO_PARSER_NUMBER: Option<f64>,
-    pub(crate) m_native__abi__TETO_PROCESS_EMPTY: Option<f64>,
-    pub(crate) m_native__abi__TETO_PROCESS_RUNNABLE: Option<f64>,
-    pub(crate) m_native__abi__TETO_PROCESS_WAITING: Option<f64>,
-    pub(crate) m_native__abi__TETO_PROCESS_ZOMBIE: Option<f64>,
-    pub(crate) m_native__abi__TETO_GUEST_PAGE_SIZE: Option<f64>,
-    pub(crate) m_native__abi__TETO_PAGE_ENTRY_SIZE: Option<f64>,
-    pub(crate) m_native__abi__TETO_PAGE_CAPACITY: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_EMPTY: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_RUNNABLE: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_WAITING: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_EXITED: Option<f64>,
-    pub(crate) m_native__abi__TETO_HART_FAULTED: Option<f64>,
-    pub(crate) m_native__abi__TETO_EVENT_NONE: Option<f64>,
-    pub(crate) m_native__abi__TETO_EVENT_SYSCALL: Option<f64>,
-    pub(crate) m_native__abi__TETO_EVENT_HOST: Option<f64>,
-    pub(crate) m_native__abi__TETO_HOST_NONE: Option<f64>,
-    pub(crate) m_native__abi__TETO_HOST_WRITE: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_BUDGET: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_SYSCALL: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_HOST: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_EXITED: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_FAULT: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_BUSY: Option<f64>,
-    pub(crate) m_native__abi__TETO_BATCH_CONTENDED: Option<f64>,
-    pub(crate) m_native__abi__TETO_FAULT_NONE: Option<f64>,
-    pub(crate) m_native__abi__TETO_FAULT_MEMORY: Option<f64>,
-    pub(crate) m_native__abi__TETO_FAULT_INSTRUCTION: Option<f64>,
-    pub(crate) m_native__abi__TETO_FAULT_BREAKPOINT: Option<f64>,
-    pub(crate) m_native__abi__TETO_FAULT_BAD_STATE: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_OK: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_BUSY: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_RANGE: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_MAGIC: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_LENGTH: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_CHECKSUM: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_JSON: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_METADATA: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_SECTION: Option<f64>,
-    pub(crate) m_native__abi__TETO_THX_MEMORY: Option<f64>,
-    pub(crate) m_native__abi__TETO_STARTUP_MAGIC: Option<f64>,
-    pub(crate) m_native__abi__TETO_START_OK: Option<f64>,
-    pub(crate) m_native__abi__TETO_START_RANGE: Option<f64>,
-    pub(crate) m_native__abi__TETO_START_FORMAT: Option<f64>,
-    pub(crate) m_native__abi__TETO_START_MEMORY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_KIND_EMPTY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_KIND_FILE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_KIND_DIRECTORY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_KIND_LINK: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_KIND_CHARACTER: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_IMAGE_MAGIC: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_IMAGE_VERSION: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_OK: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_RANGE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_FORMAT: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_CHECKSUM: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_CAPACITY_ERROR: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_VFS_DUPLICATE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PARSER_BASE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PARSER_STRING: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PARSER_STRING_LENGTH: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PARSER_STRING_ESCAPED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PARSER_NUMBER: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PROCESS_EMPTY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PROCESS_RUNNABLE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PROCESS_WAITING: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PROCESS_ZOMBIE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_GUEST_PAGE_SIZE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PAGE_ENTRY_SIZE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_PAGE_CAPACITY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_EMPTY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_RUNNABLE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_WAITING: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_EXITED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HART_FAULTED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_EVENT_NONE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_EVENT_SYSCALL: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_EVENT_HOST: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HOST_NONE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HOST_WRITE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_HOST_READ: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_BUDGET: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_SYSCALL: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_HOST: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_EXITED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_FAULT: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_BUSY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_BATCH_CONTENDED: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FAULT_NONE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FAULT_MEMORY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FAULT_INSTRUCTION: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FAULT_BREAKPOINT: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_FAULT_BAD_STATE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_OK: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_BUSY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_RANGE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_MAGIC: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_LENGTH: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_CHECKSUM: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_JSON: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_METADATA: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_SECTION: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_THX_MEMORY: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_STARTUP_MAGIC: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_START_OK: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_START_RANGE: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_START_FORMAT: Option<f64>,
+    pub(crate) m_native__abi__THISTLE_START_MEMORY: Option<f64>,
     pub(crate) m_core__rv64_arithmetic__MASK32: Option<i128>,
     pub(crate) m_native__word__MASK32: Option<i128>,
     pub(crate) m_native__vfs__VFS_HEADER_SIZE: Option<f64>,
@@ -362,6 +369,7 @@ pub struct Globals {
     pub(crate) m_native__kernel__OPEN_CLOEXEC: Option<f64>,
     pub(crate) m_native__start__START_BAD: Option<f64>,
     pub(crate) m_native__thx__BAD: Option<f64>,
+    pub(crate) m_native__thx__BAD_METADATA: Option<f64>,
     pub(crate) m_native__thx__MAX_SAFE: Option<i128>,
     pub(crate) m_native__thx__K_MACHINE: Option<f64>,
     pub(crate) m_native__thx__K_VER: Option<f64>,
@@ -389,12 +397,12 @@ pub struct Context<P: Platform> { pub platform: P, globals: Globals }
 impl<P: Platform> Context<P> {
     pub fn new(platform: P) -> Self {
         let mut ctx = Self { platform, globals: Globals {
-            m_native__abi__TETO_MAGIC: None,
-            m_native__abi__TETO_ABI_VERSION: None,
-            m_native__abi__TETO_CONTROL_BASE: None,
-            m_native__abi__TETO_CONTROL_SIZE: None,
-            m_native__abi__TETO_HART_BASE: None,
-            m_native__abi__TETO_HART_STRIDE: None,
+            m_native__abi__THISTLE_MAGIC: None,
+            m_native__abi__THISTLE_ABI_VERSION: None,
+            m_native__abi__THISTLE_CONTROL_BASE: None,
+            m_native__abi__THISTLE_CONTROL_SIZE: None,
+            m_native__abi__THISTLE_HART_BASE: None,
+            m_native__abi__THISTLE_HART_STRIDE: None,
             m_native__abi__C_MAGIC: None,
             m_native__abi__C_ABI: None,
             m_native__abi__C_FLAGS: None,
@@ -444,11 +452,12 @@ impl<P: Platform> Context<P> {
             m_native__abi__C_DESCRIPTOR_TABLE_BASE: None,
             m_native__abi__C_DESCRIPTOR_CAPACITY: None,
             m_native__abi__C_WORKER_BASE: None,
-            m_native__abi__TETO_WORKER_STRIDE: None,
+            m_native__abi__THISTLE_WORKER_STRIDE: None,
             m_native__abi__W_BATCHES: None,
             m_native__abi__W_INSTRUCTIONS: None,
             m_native__abi__W_IDLE: None,
-            m_native__abi__TETO_FLAG_THREADED: None,
+            m_native__abi__THISTLE_FLAG_THREADED: None,
+            m_native__abi__THISTLE_FLAG_HOST_STDIN: None,
             m_native__abi__H_LOCK: None,
             m_native__abi__H_STATUS: None,
             m_native__abi__H_EVENT: None,
@@ -491,7 +500,7 @@ impl<P: Platform> Context<P> {
             m_native__abi__H_FALLBACK_SYSCALLS: None,
             m_native__abi__H_GROUP_COUNT: None,
             m_native__abi__H_GROUPS: None,
-            m_native__abi__TETO_GROUP_CAPACITY: None,
+            m_native__abi__THISTLE_GROUP_CAPACITY: None,
             m_native__abi__H_PROCESS_SLOT: None,
             m_native__abi__H_IMAGE_FLOOR: None,
             m_native__abi__H_IMAGE_LOADS: None,
@@ -500,7 +509,7 @@ impl<P: Platform> Context<P> {
             m_native__abi__H_STACK_POINTER: None,
             m_native__abi__H_STARTUP_LOADS: None,
             m_native__abi__H_FLOAT_SCRATCH: None,
-            m_native__abi__TETO_PROCESS_STRIDE: None,
+            m_native__abi__THISTLE_PROCESS_STRIDE: None,
             m_native__abi__P_LOCK: None,
             m_native__abi__P_STATE: None,
             m_native__abi__P_PID: None,
@@ -540,34 +549,34 @@ impl<P: Platform> Context<P> {
             m_native__abi__P_UMASK: None,
             m_native__abi__P_DESCRIPTOR_TABLE: None,
             m_native__abi__P_DESCRIPTOR_CAPACITY: None,
-            m_native__abi__TETO_DESCRIPTOR_STRIDE: None,
-            m_native__abi__TETO_DESCRIPTOR_CAPACITY: None,
+            m_native__abi__THISTLE_DESCRIPTOR_STRIDE: None,
+            m_native__abi__THISTLE_DESCRIPTOR_CAPACITY: None,
             m_native__abi__FD_KIND: None,
             m_native__abi__FD_FLAGS: None,
             m_native__abi__FD_INODE: None,
             m_native__abi__FD_OFFSET: None,
             m_native__abi__FD_CURSOR: None,
-            m_native__abi__TETO_FD_EMPTY: None,
-            m_native__abi__TETO_FD_HOST: None,
-            m_native__abi__TETO_FD_FILE: None,
-            m_native__abi__TETO_FD_DIRECTORY: None,
-            m_native__abi__TETO_FD_READ: None,
-            m_native__abi__TETO_FD_WRITE: None,
-            m_native__abi__TETO_FD_APPEND: None,
-            m_native__abi__TETO_FD_CLOEXEC: None,
-            m_native__abi__TETO_VFS_PATH_CAPACITY: None,
-            m_native__abi__TETO_SEGMENT_STRIDE: None,
-            m_native__abi__TETO_SEGMENT_CAPACITY: None,
+            m_native__abi__THISTLE_FD_EMPTY: None,
+            m_native__abi__THISTLE_FD_HOST: None,
+            m_native__abi__THISTLE_FD_FILE: None,
+            m_native__abi__THISTLE_FD_DIRECTORY: None,
+            m_native__abi__THISTLE_FD_READ: None,
+            m_native__abi__THISTLE_FD_WRITE: None,
+            m_native__abi__THISTLE_FD_APPEND: None,
+            m_native__abi__THISTLE_FD_CLOEXEC: None,
+            m_native__abi__THISTLE_VFS_PATH_CAPACITY: None,
+            m_native__abi__THISTLE_SEGMENT_STRIDE: None,
+            m_native__abi__THISTLE_SEGMENT_CAPACITY: None,
             m_native__abi__S_ADDRESS: None,
             m_native__abi__S_END: None,
             m_native__abi__S_FLAGS: None,
             m_native__abi__S_NAME_HASH: None,
             m_native__abi__S_NAME_LENGTH: None,
-            m_native__abi__TETO_SEGMENT_READ: None,
-            m_native__abi__TETO_SEGMENT_WRITE: None,
-            m_native__abi__TETO_SEGMENT_EXECUTE: None,
-            m_native__abi__TETO_MAP_STRIDE: None,
-            m_native__abi__TETO_MAP_CAPACITY: None,
+            m_native__abi__THISTLE_SEGMENT_READ: None,
+            m_native__abi__THISTLE_SEGMENT_WRITE: None,
+            m_native__abi__THISTLE_SEGMENT_EXECUTE: None,
+            m_native__abi__THISTLE_MAP_STRIDE: None,
+            m_native__abi__THISTLE_MAP_CAPACITY: None,
             m_native__abi__M_ADDRESS: None,
             m_native__abi__M_END: None,
             m_native__abi__M_PROTECTION: None,
@@ -575,12 +584,16 @@ impl<P: Platform> Context<P> {
             m_native__abi__M_FILE_DESCRIPTOR: None,
             m_native__abi__M_FILE_OFFSET: None,
             m_native__abi__M_BACKING: None,
-            m_native__abi__TETO_MAP_BACKING_ANONYMOUS: None,
-            m_native__abi__TETO_VFS_INODE_STRIDE: None,
-            m_native__abi__TETO_VFS_INODE_CAPACITY: None,
-            m_native__abi__TETO_VFS_DENTRY_STRIDE: None,
-            m_native__abi__TETO_VFS_DENTRY_CAPACITY: None,
-            m_native__abi__TETO_VFS_DATA_CAPACITY: None,
+            m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS: None,
+            m_native__abi__THISTLE_VFS_INODE_STRIDE: None,
+            m_native__abi__THISTLE_VFS_INODE_CAPACITY: None,
+            m_native__abi__THISTLE_VFS_DENTRY_STRIDE: None,
+            m_native__abi__THISTLE_VFS_DENTRY_CAPACITY: None,
+            m_native__abi__THISTLE_VFS_DATA_CAPACITY: None,
+            m_native__abi__THISTLE_VFS_MAX_INODE_CAPACITY: None,
+            m_native__abi__THISTLE_VFS_MAX_DENTRY_CAPACITY: None,
+            m_native__abi__THISTLE_VFS_MAX_DATA_CAPACITY: None,
+            m_native__abi__THISTLE_VFS_MAX_IMAGE_SIZE: None,
             m_native__abi__V_KIND: None,
             m_native__abi__V_MODE: None,
             m_native__abi__V_UID: None,
@@ -599,68 +612,69 @@ impl<P: Platform> Context<P> {
             m_native__abi__D_NAME_LENGTH: None,
             m_native__abi__D_NAME_HASH: None,
             m_native__abi__D_FLAGS: None,
-            m_native__abi__TETO_VFS_KIND_EMPTY: None,
-            m_native__abi__TETO_VFS_KIND_FILE: None,
-            m_native__abi__TETO_VFS_KIND_DIRECTORY: None,
-            m_native__abi__TETO_VFS_KIND_LINK: None,
-            m_native__abi__TETO_VFS_KIND_CHARACTER: None,
-            m_native__abi__TETO_VFS_IMAGE_MAGIC: None,
-            m_native__abi__TETO_VFS_IMAGE_VERSION: None,
-            m_native__abi__TETO_VFS_OK: None,
-            m_native__abi__TETO_VFS_RANGE: None,
-            m_native__abi__TETO_VFS_FORMAT: None,
-            m_native__abi__TETO_VFS_CHECKSUM: None,
-            m_native__abi__TETO_VFS_CAPACITY_ERROR: None,
-            m_native__abi__TETO_VFS_DUPLICATE: None,
-            m_native__abi__TETO_PARSER_BASE: None,
-            m_native__abi__TETO_PARSER_STRING: None,
-            m_native__abi__TETO_PARSER_STRING_LENGTH: None,
-            m_native__abi__TETO_PARSER_STRING_ESCAPED: None,
-            m_native__abi__TETO_PARSER_NUMBER: None,
-            m_native__abi__TETO_PROCESS_EMPTY: None,
-            m_native__abi__TETO_PROCESS_RUNNABLE: None,
-            m_native__abi__TETO_PROCESS_WAITING: None,
-            m_native__abi__TETO_PROCESS_ZOMBIE: None,
-            m_native__abi__TETO_GUEST_PAGE_SIZE: None,
-            m_native__abi__TETO_PAGE_ENTRY_SIZE: None,
-            m_native__abi__TETO_PAGE_CAPACITY: None,
-            m_native__abi__TETO_HART_EMPTY: None,
-            m_native__abi__TETO_HART_RUNNABLE: None,
-            m_native__abi__TETO_HART_WAITING: None,
-            m_native__abi__TETO_HART_EXITED: None,
-            m_native__abi__TETO_HART_FAULTED: None,
-            m_native__abi__TETO_EVENT_NONE: None,
-            m_native__abi__TETO_EVENT_SYSCALL: None,
-            m_native__abi__TETO_EVENT_HOST: None,
-            m_native__abi__TETO_HOST_NONE: None,
-            m_native__abi__TETO_HOST_WRITE: None,
-            m_native__abi__TETO_BATCH_BUDGET: None,
-            m_native__abi__TETO_BATCH_SYSCALL: None,
-            m_native__abi__TETO_BATCH_HOST: None,
-            m_native__abi__TETO_BATCH_EXITED: None,
-            m_native__abi__TETO_BATCH_FAULT: None,
-            m_native__abi__TETO_BATCH_BUSY: None,
-            m_native__abi__TETO_BATCH_CONTENDED: None,
-            m_native__abi__TETO_FAULT_NONE: None,
-            m_native__abi__TETO_FAULT_MEMORY: None,
-            m_native__abi__TETO_FAULT_INSTRUCTION: None,
-            m_native__abi__TETO_FAULT_BREAKPOINT: None,
-            m_native__abi__TETO_FAULT_BAD_STATE: None,
-            m_native__abi__TETO_THX_OK: None,
-            m_native__abi__TETO_THX_BUSY: None,
-            m_native__abi__TETO_THX_RANGE: None,
-            m_native__abi__TETO_THX_MAGIC: None,
-            m_native__abi__TETO_THX_LENGTH: None,
-            m_native__abi__TETO_THX_CHECKSUM: None,
-            m_native__abi__TETO_THX_JSON: None,
-            m_native__abi__TETO_THX_METADATA: None,
-            m_native__abi__TETO_THX_SECTION: None,
-            m_native__abi__TETO_THX_MEMORY: None,
-            m_native__abi__TETO_STARTUP_MAGIC: None,
-            m_native__abi__TETO_START_OK: None,
-            m_native__abi__TETO_START_RANGE: None,
-            m_native__abi__TETO_START_FORMAT: None,
-            m_native__abi__TETO_START_MEMORY: None,
+            m_native__abi__THISTLE_VFS_KIND_EMPTY: None,
+            m_native__abi__THISTLE_VFS_KIND_FILE: None,
+            m_native__abi__THISTLE_VFS_KIND_DIRECTORY: None,
+            m_native__abi__THISTLE_VFS_KIND_LINK: None,
+            m_native__abi__THISTLE_VFS_KIND_CHARACTER: None,
+            m_native__abi__THISTLE_VFS_IMAGE_MAGIC: None,
+            m_native__abi__THISTLE_VFS_IMAGE_VERSION: None,
+            m_native__abi__THISTLE_VFS_OK: None,
+            m_native__abi__THISTLE_VFS_RANGE: None,
+            m_native__abi__THISTLE_VFS_FORMAT: None,
+            m_native__abi__THISTLE_VFS_CHECKSUM: None,
+            m_native__abi__THISTLE_VFS_CAPACITY_ERROR: None,
+            m_native__abi__THISTLE_VFS_DUPLICATE: None,
+            m_native__abi__THISTLE_PARSER_BASE: None,
+            m_native__abi__THISTLE_PARSER_STRING: None,
+            m_native__abi__THISTLE_PARSER_STRING_LENGTH: None,
+            m_native__abi__THISTLE_PARSER_STRING_ESCAPED: None,
+            m_native__abi__THISTLE_PARSER_NUMBER: None,
+            m_native__abi__THISTLE_PROCESS_EMPTY: None,
+            m_native__abi__THISTLE_PROCESS_RUNNABLE: None,
+            m_native__abi__THISTLE_PROCESS_WAITING: None,
+            m_native__abi__THISTLE_PROCESS_ZOMBIE: None,
+            m_native__abi__THISTLE_GUEST_PAGE_SIZE: None,
+            m_native__abi__THISTLE_PAGE_ENTRY_SIZE: None,
+            m_native__abi__THISTLE_PAGE_CAPACITY: None,
+            m_native__abi__THISTLE_HART_EMPTY: None,
+            m_native__abi__THISTLE_HART_RUNNABLE: None,
+            m_native__abi__THISTLE_HART_WAITING: None,
+            m_native__abi__THISTLE_HART_EXITED: None,
+            m_native__abi__THISTLE_HART_FAULTED: None,
+            m_native__abi__THISTLE_EVENT_NONE: None,
+            m_native__abi__THISTLE_EVENT_SYSCALL: None,
+            m_native__abi__THISTLE_EVENT_HOST: None,
+            m_native__abi__THISTLE_HOST_NONE: None,
+            m_native__abi__THISTLE_HOST_WRITE: None,
+            m_native__abi__THISTLE_HOST_READ: None,
+            m_native__abi__THISTLE_BATCH_BUDGET: None,
+            m_native__abi__THISTLE_BATCH_SYSCALL: None,
+            m_native__abi__THISTLE_BATCH_HOST: None,
+            m_native__abi__THISTLE_BATCH_EXITED: None,
+            m_native__abi__THISTLE_BATCH_FAULT: None,
+            m_native__abi__THISTLE_BATCH_BUSY: None,
+            m_native__abi__THISTLE_BATCH_CONTENDED: None,
+            m_native__abi__THISTLE_FAULT_NONE: None,
+            m_native__abi__THISTLE_FAULT_MEMORY: None,
+            m_native__abi__THISTLE_FAULT_INSTRUCTION: None,
+            m_native__abi__THISTLE_FAULT_BREAKPOINT: None,
+            m_native__abi__THISTLE_FAULT_BAD_STATE: None,
+            m_native__abi__THISTLE_THX_OK: None,
+            m_native__abi__THISTLE_THX_BUSY: None,
+            m_native__abi__THISTLE_THX_RANGE: None,
+            m_native__abi__THISTLE_THX_MAGIC: None,
+            m_native__abi__THISTLE_THX_LENGTH: None,
+            m_native__abi__THISTLE_THX_CHECKSUM: None,
+            m_native__abi__THISTLE_THX_JSON: None,
+            m_native__abi__THISTLE_THX_METADATA: None,
+            m_native__abi__THISTLE_THX_SECTION: None,
+            m_native__abi__THISTLE_THX_MEMORY: None,
+            m_native__abi__THISTLE_STARTUP_MAGIC: None,
+            m_native__abi__THISTLE_START_OK: None,
+            m_native__abi__THISTLE_START_RANGE: None,
+            m_native__abi__THISTLE_START_FORMAT: None,
+            m_native__abi__THISTLE_START_MEMORY: None,
             m_core__rv64_arithmetic__MASK32: None,
             m_native__word__MASK32: None,
             m_native__vfs__VFS_HEADER_SIZE: None,
@@ -684,6 +698,7 @@ impl<P: Platform> Context<P> {
             m_native__kernel__OPEN_CLOEXEC: None,
             m_native__start__START_BAD: None,
             m_native__thx__BAD: None,
+            m_native__thx__BAD_METADATA: None,
             m_native__thx__MAX_SAFE: None,
             m_native__thx__K_MACHINE: None,
             m_native__thx__K_VER: None,
@@ -706,12 +721,12 @@ impl<P: Platform> Context<P> {
             m_native__thx__K_AT: None,
             m_native__thx__K_LEN: None,
         } };
-        ctx.globals.m_native__abi__TETO_MAGIC = Some(1330922836.0f64);
-        ctx.globals.m_native__abi__TETO_ABI_VERSION = Some(10.0f64);
-        ctx.globals.m_native__abi__TETO_CONTROL_BASE = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_CONTROL_SIZE = Some(4096.0f64);
-        ctx.globals.m_native__abi__TETO_HART_BASE = Some(4096.0f64);
-        ctx.globals.m_native__abi__TETO_HART_STRIDE = Some(1024.0f64);
+        ctx.globals.m_native__abi__THISTLE_MAGIC = Some(1330922836.0f64);
+        ctx.globals.m_native__abi__THISTLE_ABI_VERSION = Some(10.0f64);
+        ctx.globals.m_native__abi__THISTLE_CONTROL_BASE = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_CONTROL_SIZE = Some(4096.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_BASE = Some(4096.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_STRIDE = Some(1024.0f64);
         ctx.globals.m_native__abi__C_MAGIC = Some(0.0f64);
         ctx.globals.m_native__abi__C_ABI = Some(4.0f64);
         ctx.globals.m_native__abi__C_FLAGS = Some(8.0f64);
@@ -761,11 +776,12 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__C_DESCRIPTOR_TABLE_BASE = Some(3292.0f64);
         ctx.globals.m_native__abi__C_DESCRIPTOR_CAPACITY = Some(3296.0f64);
         ctx.globals.m_native__abi__C_WORKER_BASE = Some(160.0f64);
-        ctx.globals.m_native__abi__TETO_WORKER_STRIDE = Some(24.0f64);
+        ctx.globals.m_native__abi__THISTLE_WORKER_STRIDE = Some(24.0f64);
         ctx.globals.m_native__abi__W_BATCHES = Some(0.0f64);
         ctx.globals.m_native__abi__W_INSTRUCTIONS = Some(8.0f64);
         ctx.globals.m_native__abi__W_IDLE = Some(16.0f64);
-        ctx.globals.m_native__abi__TETO_FLAG_THREADED = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_FLAG_THREADED = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_FLAG_HOST_STDIN = Some(2.0f64);
         ctx.globals.m_native__abi__H_LOCK = Some(0.0f64);
         ctx.globals.m_native__abi__H_STATUS = Some(4.0f64);
         ctx.globals.m_native__abi__H_EVENT = Some(8.0f64);
@@ -808,7 +824,7 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__H_FALLBACK_SYSCALLS = Some(728.0f64);
         ctx.globals.m_native__abi__H_GROUP_COUNT = Some(736.0f64);
         ctx.globals.m_native__abi__H_GROUPS = Some(740.0f64);
-        ctx.globals.m_native__abi__TETO_GROUP_CAPACITY = Some(32.0f64);
+        ctx.globals.m_native__abi__THISTLE_GROUP_CAPACITY = Some(32.0f64);
         ctx.globals.m_native__abi__H_PROCESS_SLOT = Some(868.0f64);
         ctx.globals.m_native__abi__H_IMAGE_FLOOR = Some(872.0f64);
         ctx.globals.m_native__abi__H_IMAGE_LOADS = Some(880.0f64);
@@ -817,7 +833,7 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__H_STACK_POINTER = Some(904.0f64);
         ctx.globals.m_native__abi__H_STARTUP_LOADS = Some(912.0f64);
         ctx.globals.m_native__abi__H_FLOAT_SCRATCH = Some(920.0f64);
-        ctx.globals.m_native__abi__TETO_PROCESS_STRIDE = Some(352.0f64);
+        ctx.globals.m_native__abi__THISTLE_PROCESS_STRIDE = Some(352.0f64);
         ctx.globals.m_native__abi__P_LOCK = Some(0.0f64);
         ctx.globals.m_native__abi__P_STATE = Some(4.0f64);
         ctx.globals.m_native__abi__P_PID = Some(8.0f64);
@@ -857,34 +873,34 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__P_UMASK = Some(316.0f64);
         ctx.globals.m_native__abi__P_DESCRIPTOR_TABLE = Some(320.0f64);
         ctx.globals.m_native__abi__P_DESCRIPTOR_CAPACITY = Some(324.0f64);
-        ctx.globals.m_native__abi__TETO_DESCRIPTOR_STRIDE = Some(32.0f64);
-        ctx.globals.m_native__abi__TETO_DESCRIPTOR_CAPACITY = Some(64.0f64);
+        ctx.globals.m_native__abi__THISTLE_DESCRIPTOR_STRIDE = Some(32.0f64);
+        ctx.globals.m_native__abi__THISTLE_DESCRIPTOR_CAPACITY = Some(64.0f64);
         ctx.globals.m_native__abi__FD_KIND = Some(0.0f64);
         ctx.globals.m_native__abi__FD_FLAGS = Some(4.0f64);
         ctx.globals.m_native__abi__FD_INODE = Some(8.0f64);
         ctx.globals.m_native__abi__FD_OFFSET = Some(16.0f64);
         ctx.globals.m_native__abi__FD_CURSOR = Some(24.0f64);
-        ctx.globals.m_native__abi__TETO_FD_EMPTY = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_FD_HOST = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_FD_FILE = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_FD_DIRECTORY = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_FD_READ = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_FD_WRITE = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_FD_APPEND = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_FD_CLOEXEC = Some(8.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_PATH_CAPACITY = Some(4096.0f64);
-        ctx.globals.m_native__abi__TETO_SEGMENT_STRIDE = Some(32.0f64);
-        ctx.globals.m_native__abi__TETO_SEGMENT_CAPACITY = Some(128.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_EMPTY = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_HOST = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_FILE = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_DIRECTORY = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_READ = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_WRITE = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_APPEND = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_FD_CLOEXEC = Some(8.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_PATH_CAPACITY = Some(4096.0f64);
+        ctx.globals.m_native__abi__THISTLE_SEGMENT_STRIDE = Some(32.0f64);
+        ctx.globals.m_native__abi__THISTLE_SEGMENT_CAPACITY = Some(128.0f64);
         ctx.globals.m_native__abi__S_ADDRESS = Some(0.0f64);
         ctx.globals.m_native__abi__S_END = Some(8.0f64);
         ctx.globals.m_native__abi__S_FLAGS = Some(16.0f64);
         ctx.globals.m_native__abi__S_NAME_HASH = Some(20.0f64);
         ctx.globals.m_native__abi__S_NAME_LENGTH = Some(24.0f64);
-        ctx.globals.m_native__abi__TETO_SEGMENT_READ = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_SEGMENT_WRITE = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_SEGMENT_EXECUTE = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_MAP_STRIDE = Some(48.0f64);
-        ctx.globals.m_native__abi__TETO_MAP_CAPACITY = Some(256.0f64);
+        ctx.globals.m_native__abi__THISTLE_SEGMENT_READ = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_SEGMENT_WRITE = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_SEGMENT_EXECUTE = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_MAP_STRIDE = Some(48.0f64);
+        ctx.globals.m_native__abi__THISTLE_MAP_CAPACITY = Some(256.0f64);
         ctx.globals.m_native__abi__M_ADDRESS = Some(0.0f64);
         ctx.globals.m_native__abi__M_END = Some(8.0f64);
         ctx.globals.m_native__abi__M_PROTECTION = Some(16.0f64);
@@ -892,12 +908,16 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__M_FILE_DESCRIPTOR = Some(24.0f64);
         ctx.globals.m_native__abi__M_FILE_OFFSET = Some(32.0f64);
         ctx.globals.m_native__abi__M_BACKING = Some(40.0f64);
-        ctx.globals.m_native__abi__TETO_MAP_BACKING_ANONYMOUS = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_INODE_STRIDE = Some(64.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_INODE_CAPACITY = Some(4096.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_DENTRY_STRIDE = Some(24.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_DENTRY_CAPACITY = Some(8192.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_DATA_CAPACITY = Some(((16.0f64 * 1024.0f64) * 1024.0f64));
+        ctx.globals.m_native__abi__THISTLE_MAP_BACKING_ANONYMOUS = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_INODE_STRIDE = Some(64.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_INODE_CAPACITY = Some(4096.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_DENTRY_STRIDE = Some(24.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_DENTRY_CAPACITY = Some(8192.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_DATA_CAPACITY = Some(((16.0f64 * 1024.0f64) * 1024.0f64));
+        ctx.globals.m_native__abi__THISTLE_VFS_MAX_INODE_CAPACITY = Some(16384.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_MAX_DENTRY_CAPACITY = Some(32768.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_MAX_DATA_CAPACITY = Some(((128.0f64 * 1024.0f64) * 1024.0f64));
+        ctx.globals.m_native__abi__THISTLE_VFS_MAX_IMAGE_SIZE = Some(((144.0f64 * 1024.0f64) * 1024.0f64));
         ctx.globals.m_native__abi__V_KIND = Some(0.0f64);
         ctx.globals.m_native__abi__V_MODE = Some(4.0f64);
         ctx.globals.m_native__abi__V_UID = Some(8.0f64);
@@ -916,68 +936,69 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__abi__D_NAME_LENGTH = Some(12.0f64);
         ctx.globals.m_native__abi__D_NAME_HASH = Some(16.0f64);
         ctx.globals.m_native__abi__D_FLAGS = Some(20.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_KIND_EMPTY = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_KIND_FILE = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_KIND_DIRECTORY = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_KIND_LINK = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_KIND_CHARACTER = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_IMAGE_MAGIC = Some(827541078.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_IMAGE_VERSION = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_OK = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_RANGE = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_FORMAT = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_CHECKSUM = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_CAPACITY_ERROR = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_VFS_DUPLICATE = Some(5.0f64);
-        ctx.globals.m_native__abi__TETO_PARSER_BASE = Some(3328.0f64);
-        ctx.globals.m_native__abi__TETO_PARSER_STRING = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_PARSER_STRING_LENGTH = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_PARSER_STRING_ESCAPED = Some(8.0f64);
-        ctx.globals.m_native__abi__TETO_PARSER_NUMBER = Some(16.0f64);
-        ctx.globals.m_native__abi__TETO_PROCESS_EMPTY = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_PROCESS_RUNNABLE = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_PROCESS_WAITING = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_PROCESS_ZOMBIE = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_GUEST_PAGE_SIZE = Some(65536.0f64);
-        ctx.globals.m_native__abi__TETO_PAGE_ENTRY_SIZE = Some(16.0f64);
-        ctx.globals.m_native__abi__TETO_PAGE_CAPACITY = Some(8192.0f64);
-        ctx.globals.m_native__abi__TETO_HART_EMPTY = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_HART_RUNNABLE = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_HART_WAITING = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_HART_EXITED = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_HART_FAULTED = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_EVENT_NONE = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_EVENT_SYSCALL = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_EVENT_HOST = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_HOST_NONE = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_HOST_WRITE = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_BUDGET = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_SYSCALL = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_HOST = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_EXITED = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_FAULT = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_BUSY = Some(5.0f64);
-        ctx.globals.m_native__abi__TETO_BATCH_CONTENDED = Some(6.0f64);
-        ctx.globals.m_native__abi__TETO_FAULT_NONE = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_FAULT_MEMORY = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_FAULT_INSTRUCTION = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_FAULT_BREAKPOINT = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_FAULT_BAD_STATE = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_THX_OK = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_THX_BUSY = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_THX_RANGE = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_THX_MAGIC = Some(3.0f64);
-        ctx.globals.m_native__abi__TETO_THX_LENGTH = Some(4.0f64);
-        ctx.globals.m_native__abi__TETO_THX_CHECKSUM = Some(5.0f64);
-        ctx.globals.m_native__abi__TETO_THX_JSON = Some(6.0f64);
-        ctx.globals.m_native__abi__TETO_THX_METADATA = Some(7.0f64);
-        ctx.globals.m_native__abi__TETO_THX_SECTION = Some(8.0f64);
-        ctx.globals.m_native__abi__TETO_THX_MEMORY = Some(9.0f64);
-        ctx.globals.m_native__abi__TETO_STARTUP_MAGIC = Some(827609940.0f64);
-        ctx.globals.m_native__abi__TETO_START_OK = Some(0.0f64);
-        ctx.globals.m_native__abi__TETO_START_RANGE = Some(1.0f64);
-        ctx.globals.m_native__abi__TETO_START_FORMAT = Some(2.0f64);
-        ctx.globals.m_native__abi__TETO_START_MEMORY = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_KIND_EMPTY = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_KIND_FILE = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_KIND_DIRECTORY = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_KIND_LINK = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_KIND_CHARACTER = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_IMAGE_MAGIC = Some(827541078.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_IMAGE_VERSION = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_OK = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_RANGE = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_FORMAT = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_CHECKSUM = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_CAPACITY_ERROR = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_VFS_DUPLICATE = Some(5.0f64);
+        ctx.globals.m_native__abi__THISTLE_PARSER_BASE = Some(3328.0f64);
+        ctx.globals.m_native__abi__THISTLE_PARSER_STRING = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_PARSER_STRING_LENGTH = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_PARSER_STRING_ESCAPED = Some(8.0f64);
+        ctx.globals.m_native__abi__THISTLE_PARSER_NUMBER = Some(16.0f64);
+        ctx.globals.m_native__abi__THISTLE_PROCESS_EMPTY = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_PROCESS_RUNNABLE = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_PROCESS_WAITING = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_PROCESS_ZOMBIE = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_GUEST_PAGE_SIZE = Some(65536.0f64);
+        ctx.globals.m_native__abi__THISTLE_PAGE_ENTRY_SIZE = Some(16.0f64);
+        ctx.globals.m_native__abi__THISTLE_PAGE_CAPACITY = Some(8192.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_EMPTY = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_RUNNABLE = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_WAITING = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_EXITED = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_HART_FAULTED = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_EVENT_NONE = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_EVENT_SYSCALL = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_EVENT_HOST = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_HOST_NONE = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_HOST_WRITE = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_HOST_READ = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_BUDGET = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_SYSCALL = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_HOST = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_EXITED = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_FAULT = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_BUSY = Some(5.0f64);
+        ctx.globals.m_native__abi__THISTLE_BATCH_CONTENDED = Some(6.0f64);
+        ctx.globals.m_native__abi__THISTLE_FAULT_NONE = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_FAULT_MEMORY = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_FAULT_INSTRUCTION = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_FAULT_BREAKPOINT = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_FAULT_BAD_STATE = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_OK = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_BUSY = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_RANGE = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_MAGIC = Some(3.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_LENGTH = Some(4.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_CHECKSUM = Some(5.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_JSON = Some(6.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_METADATA = Some(7.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_SECTION = Some(8.0f64);
+        ctx.globals.m_native__abi__THISTLE_THX_MEMORY = Some(9.0f64);
+        ctx.globals.m_native__abi__THISTLE_STARTUP_MAGIC = Some(827609940.0f64);
+        ctx.globals.m_native__abi__THISTLE_START_OK = Some(0.0f64);
+        ctx.globals.m_native__abi__THISTLE_START_RANGE = Some(1.0f64);
+        ctx.globals.m_native__abi__THISTLE_START_FORMAT = Some(2.0f64);
+        ctx.globals.m_native__abi__THISTLE_START_MEMORY = Some(3.0f64);
         ctx.globals.m_core__rv64_arithmetic__MASK32 = Some(4294967295i128);
         ctx.globals.m_native__word__MASK32 = Some(4294967295i128);
         ctx.globals.m_native__vfs__VFS_HEADER_SIZE = Some(32.0f64);
@@ -1001,6 +1022,7 @@ impl<P: Platform> Context<P> {
         ctx.globals.m_native__kernel__OPEN_CLOEXEC = Some(524288.0f64);
         ctx.globals.m_native__start__START_BAD = Some(4294967295.0f64);
         ctx.globals.m_native__thx__BAD = Some(4294967295.0f64);
+        ctx.globals.m_native__thx__BAD_METADATA = Some(4294967294.0f64);
         ctx.globals.m_native__thx__MAX_SAFE = Some(9007199254740991i128);
         ctx.globals.m_native__thx__K_MACHINE = Some(1.0f64);
         ctx.globals.m_native__thx__K_VER = Some(2.0f64);

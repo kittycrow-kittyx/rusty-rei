@@ -17,10 +17,7 @@ return 0.0f64;
 }
 
 
-pub fn rv64RegisterWordValue<P: Platform>(ctx: &Context<P>, mut funct3: f64, mut top: f64, mut left: i128, mut right: i128) -> i128 {
-let shift: i128 = (crate::m_core__rv64_numbers::ux(ctx, right) & 31i128);
-if (top == 1.0f64) {
-{
+pub fn rv64MultiplyDivideWord<P: Platform>(ctx: &Context<P>, mut funct3: f64, mut left: i128, mut right: i128) -> i128 {
 if (funct3 == 0.0f64) {
 return crate::m_core__rv64_numbers::sx(ctx, (crate::m_core__rv64_numbers::sx(ctx, left, 32.0f64)).checked_mul(crate::m_core__rv64_numbers::sx(ctx, right, 32.0f64)).expect("BigInt arithmetic"), 32.0f64);
 }
@@ -38,6 +35,12 @@ return crate::m_core__rv64_numbers::sx(ctx, crate::m_core__rv64_arithmetic::rv64
 }
 return 0i128;
 }
+
+
+pub fn rv64RegisterWordValue<P: Platform>(ctx: &Context<P>, mut funct3: f64, mut top: f64, mut left: i128, mut right: i128) -> i128 {
+let shift: i128 = (crate::m_core__rv64_numbers::ux(ctx, right) & 31i128);
+if (top == 1.0f64) {
+return crate::m_core__rv64_word::rv64MultiplyDivideWord(ctx, funct3, left, right);
 }
 if (funct3 == 0.0f64) {
 return crate::m_core__rv64_numbers::sx(ctx, (if (top == 0.0f64) { (left).checked_add(right).expect("BigInt arithmetic") } else { (left).checked_sub(right).expect("BigInt arithmetic") }), 32.0f64);

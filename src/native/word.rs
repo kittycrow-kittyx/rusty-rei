@@ -44,25 +44,25 @@ return numbers::number(Numeric::BigInt(unsigned));
 }
 
 
-pub fn bitsToF32<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::TetoMemory, mut scratch: f64, mut value: i128) -> f64 {
+pub fn bitsToF32<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut scratch: f64, mut value: i128) -> f64 {
 let _ = ctx.platform.__bake_c_view_set_u32((memory).view, scratch, numbers::number(Numeric::BigInt((value & ctx.globals.m_native__word__MASK32.expect("global initialisation")))), Some(true));
 return ctx.platform.__bake_c_view_get_f32((memory).view, scratch, Some(true));
 }
 
 
-pub fn bitsToF64<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::TetoMemory, mut scratch: f64, mut value: i128) -> f64 {
+pub fn bitsToF64<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut scratch: f64, mut value: i128) -> f64 {
 let _ = ctx.platform.__bake_c_view_set_u64((memory).view, scratch, crate::m_native__word::ux(ctx, value), Some(true));
 return ctx.platform.__bake_c_view_get_f64((memory).view, scratch, Some(true));
 }
 
 
-pub fn f32ToBits<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::TetoMemory, mut scratch: f64, mut value: f64) -> i128 {
+pub fn f32ToBits<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut scratch: f64, mut value: f64) -> i128 {
 let _ = ctx.platform.__bake_c_view_set_f32((memory).view, scratch, ((value) as f32 as f64), Some(true));
 return numbers::bigint(Numeric::Number(ctx.platform.__bake_c_view_get_u32((memory).view, scratch, Some(true))));
 }
 
 
-pub fn f64ToBits<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::TetoMemory, mut scratch: f64, mut value: f64) -> i128 {
+pub fn f64ToBits<P: Platform>(ctx: &Context<P>, mut memory: crate::m_native__memory::ThistleMemory, mut scratch: f64, mut value: f64) -> i128 {
 let _ = ctx.platform.__bake_c_view_set_f64((memory).view, scratch, value, Some(true));
 return ctx.platform.__bake_c_view_get_u64((memory).view, scratch, Some(true));
 }

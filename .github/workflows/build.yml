@@ -1,4 +1,4 @@
-name: Rusty Rei native build
+name: Kernel source and build validation
 
 on:
   push:
@@ -12,18 +12,20 @@ permissions:
 
 jobs:
   source:
+    name: Transpile source
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: oven-sh/setup-bun@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Regenerate Rust from the pinned toolchain
+      - name: Transpile source from pinned toolchain
         run: bash scripts/regenerate.sh
-      - uses: actions/upload-artifact@v4
+      - name: Upload generated source
+        uses: actions/upload-artifact@v6
         with:
           name: rusty-rei-generated-source
           path: |
@@ -31,19 +33,20 @@ jobs:
             Cargo.toml
             crust.manifest.json
           if-no-files-found: error
-      - name: Install bare-metal targets for regenerated Rust
-        run: rustup target add x86_64-unknown-none aarch64-unknown-none
-      - name: Compile freshly regenerated Rust with warnings denied
-        run: bash scripts/build.sh
-      - name: Verify committed source matches regeneration
-        run: |
-          git add -A -- src Cargo.toml crust.manifest.json
-          git diff --cached --exit-code
-  native:
+  compile:
+    name: Compile
+    needs: source
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Verify committed Rust snapshot
+      - uses: actions/checkout@v5
+      - name: Remove old generated source
+        run: rm -rf src
+      - name: Download generated source
+        uses: actions/download-artifact@v7
+        with:
+          name: rusty-rei-generated-source
+          path: .
+      - name: Verify generated source
         shell: bash
         run: |
           test -f Cargo.toml
@@ -55,9 +58,11 @@ jobs:
           bash -n scripts/build.sh scripts/regenerate.sh scripts/verify-pins.sh
           grep -Fxq '#![no_std]' src/lib.rs
           grep -Fxq '#![forbid(unsafe_code)]' src/lib.rs
-      - name: Install bare-metal targets
+      - name: Install bare-metal targets for regenerated Rust
         run: rustup target add x86_64-unknown-none aarch64-unknown-none
-      - name: Compile checked-in Rust with warnings denied
+      - name: Compile freshly generated source
         run: bash scripts/build.sh
-      - name: Verify clean checkout
-        run: test -z "$(git status --porcelain)"
+      - name: Verify committed source matches regeneration
+        run: |
+          git add -A -- src Cargo.toml crust.manifest.json
+          git diff --cached --exit-code
