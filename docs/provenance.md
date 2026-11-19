@@ -2,8 +2,8 @@
 
 | Component | Git revision |
 |---|---|
-| Thistle | 19a571d6da85f63256041766d5200ad50e825423 |
-| Bake | 3d3d1893c6baf64f1fd771371a1e8b250ece8056 |
-| Crust | 6dc232ff5ae2b405076df189fdce211423dee6a1 |
+| Thistle | 0660abec7685a7500f5129454550f4c0c7703fae |
+| Bake | 1ebd5d2809da7c9a4ad5e5c511522a16ad256ef6 |
+| Crust | 145f31faae16c60eb39bafc649c729b3f25d299d |
 
-These gitlinks identify the exact compiler and canonical source revisions. Crust is pinned to the validated compiler branch revision. Generated source is not maintained independently.
+These gitlinks identify the exact compiler and canonical source revisions. Crust is pinned to its main revision. The committed snapshot requires regeneration. Generated source is not maintained independently.
