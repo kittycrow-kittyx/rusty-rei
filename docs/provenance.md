@@ -1,9 +1,9 @@
-# Build provenance
+# Source provenance
 
 | Component | Git revision |
 |---|---|
-| Thistle | a2be03338126ae7afd6ecb6cd4a18c30ae583459 |
-| Bake | 57127ffd6e2d09dae416e2a8220a42a407095e5e |
-| Crust | d52dcee42faa33deec5505739d606036f21c38c1 |
+| Thistle | 76932c85c4db2eb481345aafe8611e6f53de9d85 |
+| Bake | 30f7c767584737bf001d2f99b7d303b809bb4f0f |
+| Crust | 02b88890398adf47bce3e012bf1d9755acbb7770 |
 
-These gitlinks identify the exact compiler and canonical source revisions. Generated source must be regenerated and verified against these pins.
+Generated source uses the verified releases in upstream.releases.json. Bake is inherited through Crust.

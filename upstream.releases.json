@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "dependencies": [
+    {
+      "repository": "kittycrow-kittyx/thistle",
+      "path": "thistle",
+      "commit": "76932c85c4db2eb481345aafe8611e6f53de9d85",
+      "tag": "v2.2.1"
+    },
+    {
+      "repository": "kittycrow-kittyx/crust",
+      "path": "crust",
+      "commit": "02b88890398adf47bce3e012bf1d9755acbb7770",
+      "tag": "v1.0.1"
+    }
+  ]
+}

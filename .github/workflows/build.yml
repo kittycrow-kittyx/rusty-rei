@@ -14,19 +14,34 @@ jobs:
   targets:
     name: Discover validation targets
     uses: ./.github/workflows/targets.yml
+    with:
+      source_sha: ${{ github.sha }}
   source:
     name: Transpile source
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Check out source
+        uses: actions/checkout@v5
         with:
           submodules: recursive
-      - uses: oven-sh/setup-bun@v2
-      - uses: actions/setup-node@v5
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-      - name: Transpile source from pinned toolchain
-        run: bash scripts/regenerate.sh
+          bun-version: 1.4.5
+      - name: Verify build scripts
+        run: for script in scripts/*.sh; do bash -n "$script" || exit; done
+      - name: Verify upstream pins
+        run: bash scripts/verify-pins.sh
+      - name: Download upstream releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/fetch-upstream.sh
+      - name: Install upstream dependencies
+        run: |
+          bun install --cwd build/upstream/crust --frozen-lockfile
+          bun install --cwd build/upstream/crust/bake --frozen-lockfile
+      - name: Transpile source
+        run: bash scripts/regenerate.sh --source-only
       - name: Upload generated source
         uses: actions/upload-artifact@v6
         with:
@@ -35,6 +50,9 @@ jobs:
             src/
             Cargo.toml
             crust.manifest.json
+            docs/bake-manifest.json
+            docs/provenance.md
+            SHA256SUMS
           if-no-files-found: error
   compile:
     name: Compile (${{ matrix.arch }})
@@ -46,7 +64,8 @@ jobs:
       TARGET: ${{ matrix.target }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Check out source
+        uses: actions/checkout@v5
       - name: Remove old generated source
         run: rm -rf src
       - name: Download generated source
@@ -55,18 +74,8 @@ jobs:
           name: rusty-rei-generated-source
           path: .
       - name: Verify generated source
-        shell: bash
-        run: |
-          test -f Cargo.toml
-          test -f crust.manifest.json
-          test -f src/lib.rs
-          test -z "$(git ls-files -- '*.c' '*.h' '*.S')"
-          test -z "$(git ls-files -- dist platform target '*.o' '*.a' '*.so' '*.elf' '*.img' '*.bin' '*.wasm' '*.rlib')"
-          test ! -e platform
-          bash -n scripts/build.sh scripts/regenerate.sh scripts/verify-pins.sh
-          grep -Fxq '#![no_std]' src/lib.rs
-          grep -Fxq '#![forbid(unsafe_code)]' src/lib.rs
-      - name: Install Target Toolchain
+        run: bash scripts/verify-source.sh
+      - name: Set up Rust toolchain
         env:
           TOOLCHAIN: ${{ matrix.toolchain }}
           BUILD_STD: ${{ toJSON(matrix.buildStd) }}
@@ -79,20 +88,12 @@ jobs:
           else
             rustup target add "$TARGET" --toolchain "$TOOLCHAIN"
           fi
-      - name: Compile freshly generated source
+      - name: Compile Rust
         env:
           TOOLCHAIN: ${{ matrix.toolchain }}
           BUILD_STD: ${{ toJSON(matrix.buildStd) }}
-          RUSTFLAGS: -D warnings -C panic=abort
-        run: |
-          set -euo pipefail
-          if [[ "$BUILD_STD" == true ]]; then
-            cargo +"$TOOLCHAIN" build -Z build-std=core,compiler_builtins --release -j 2 --target "$TARGET" --lib
-          else
-            cargo +"$TOOLCHAIN" build --release -j 2 --target "$TARGET" --lib
-          fi
-          test -s "target/$TARGET/release/libcrust_kernel.rlib"
+        run: bash scripts/compile-target.sh "$TARGET" "$TOOLCHAIN" "$BUILD_STD"
       - name: Verify committed source matches regeneration
         run: |
-          git add -A -- src Cargo.toml crust.manifest.json
+          git add -A -- src Cargo.toml crust.manifest.json docs/bake-manifest.json docs/provenance.md SHA256SUMS
           git diff --cached --exit-code

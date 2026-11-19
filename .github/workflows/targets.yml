@@ -2,6 +2,10 @@ name: Discover upstream CI targets
 
 on:
   workflow_call:
+    inputs:
+      source_sha:
+        required: true
+        type: string
     outputs:
       matrix:
         description: Target matrix consumed by the upstream final validation job
@@ -20,11 +24,23 @@ jobs:
       matrix: ${{ steps.targets.outputs.matrix }}
       revision: ${{ steps.targets.outputs.revision }}
     steps:
-      - name: Read the current upstream CI contract
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Verify upstream target pin
+        id: pin
+        run: |
+          revision="$(git ls-tree HEAD crust | awk '$1 == "160000" {print $3}')"
+          [[ "$revision" =~ ^[a-f0-9]{40}$ ]]
+          jq -e --arg sha "$revision" 'any(.dependencies[]; .path == "crust" and .commit == $sha)' upstream.releases.json
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+      - name: Read the pinned upstream CI contract
         uses: actions/checkout@v5
         with:
           repository: kittycrow-kittyx/crust
-          ref: main
+          ref: ${{ steps.pin.outputs.revision }}
           path: upstream-ci
           persist-credentials: false
       - name: Discover and validate the final-stage matrix

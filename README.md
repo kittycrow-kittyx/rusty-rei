@@ -19,7 +19,7 @@ intrinsic trait implementation and links its image separately.
 
 ## Source generation
 
-The pinned Thistle, Bake and Crust revisions define the source snapshot.
+The pinned Thistle and Crust releases define the source snapshot. Bake is inherited through Crust. Regeneration uses Bash and Bun 1.4.5 or later to execute upstream TypeScript; native compilation remains independent.
 See [build instructions](docs/build.md) for regeneration and
 [provenance](docs/provenance.md) for the exact revisions.
 
@@ -27,9 +27,9 @@ See [build instructions](docs/build.md) for regeneration and
 
 [GitHub Releases](https://github.com/kittycrow-kittyx/rusty-rei/releases) distributes
 freestanding architecture-specific archives for every target validated by
-[crust CI's final stage](https://github.com/kittycrow-kittyx/crust/blob/main/.github/workflows/compiler.yml).
-The [upstream target contract](https://github.com/kittycrow-kittyx/crust/blob/main/targets.json)
-is discovered at workflow runtime, not duplicated here. The release version
+[crust CI's final stage](https://github.com/kittycrow-kittyx/crust/blob/02b88890398adf47bce3e012bf1d9755acbb7770/.github/workflows/compiler.yml).
+The [upstream target contract](https://github.com/kittycrow-kittyx/crust/blob/02b88890398adf47bce3e012bf1d9755acbb7770/targets.json)
+is read from the pinned compiler release, not duplicated here. The release version
 is stored in `VERSION`, independently of generator-owned files.
 
 Each archive is named `rusty-rei-v<version>-<architecture>.tar.gz` and
@@ -40,10 +40,7 @@ These are kernel libraries, not bootable images.
 
 The release workflow compiles the committed source without regenerating it,
 checks the ELF architecture, and publishes the complete discovered set plus
-`SHA256SUMS` only after every target succeeds. A manual workflow run
-builds the archives without publishing. To publish after validation,
-push a version tag matching `VERSION` (currently `v2.2.0`).
-Enable immutable releases in repository settings to protect published assets.
+`SHA256SUMS` only after every target succeeds. Successful validation of a push to `main` triggers the release for that exact commit and creates the tag matching `VERSION`. A manual workflow run builds archives without publishing. Use a new `VERSION` for subsequent releases.
 
 ## Licence
 

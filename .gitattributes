@@ -1,0 +1,2 @@
+# Shell is build tooling rather than kernel implementation.
+*.sh linguist-detectable=false
